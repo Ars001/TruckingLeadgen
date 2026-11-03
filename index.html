@@ -184,7 +184,8 @@ td.c-meta { display: none; }
   td { border: 0; padding: 0; }
   td.c-carrier { grid-column: 1; grid-row: 1; }
   td.c-lead { grid-column: 2; grid-row: 1; text-align: right; }
-  td.c-person, td.c-phone, td.c-email, td.c-loc, td.c-meta { grid-column: 1 / -1; }
+  td.c-status, td.c-person, td.c-phone, td.c-email, td.c-loc, td.c-meta { grid-column: 1 / -1; }
+  td.c-status .sub { display: inline; margin-left: 6px; }
   td.c-fleet, td.c-date, td.c-eq { display: none; }
   td.c-meta { display: block; }
   .person { white-space: normal; }
@@ -346,8 +347,8 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <table>
         <thead>
           <tr>
-            <th>Lead status</th><th>Carrier</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
-            <th>Fleet</th><th id="dateHead">Authority</th><th>Equipment</th>
+            <th>Lead status</th><th>Carrier</th><th>MC status</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
+            <th>Fleet</th><th id="dateHead">Authority date</th><th>Equipment</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -667,7 +668,7 @@ async function run(append = false) {
 function finish(f, pageFull = false) {
   setStatus(""); $("#go").disabled = false;
   $("#more500").hidden = !pageFull;
-  $("#dateHead").textContent = f.mode === "date" ? "Authority" : "Registered";
+  $("#dateHead").textContent = f.mode === "date" ? "Authority date" : "Registered";
   render();
 }
 
@@ -732,7 +733,7 @@ function render() {
     const msg = searching ? `<strong>Searching…</strong>Carriers will appear here in a moment.`
       : total ? `<strong>No carriers in this view</strong>Clear the filter box or pick another lead status.`
       : `<strong>No active carriers match</strong>Try a wider date range, a nearby city, or fewer filters under More filters.`;
-    body.innerHTML = `<tr><td colspan="9" class="empty">${msg}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="10" class="empty">${msg}</td></tr>`;
     $("#showMore").hidden = true;
     return;
   }
@@ -749,6 +750,7 @@ function render() {
     return `<tr data-i="${x.dot}" class="${s === "notint" ? "done" : ""}">
       <td class="c-lead">${leadSelect(x.dot)}${note ? `<div class="hasnote" title="${esc(note)}">📝 ${esc(note)}</div>` : ""}</td>
       <td class="c-carrier"><div class="cname">${esc(r.legal_name)}</div>${r.dba_name ? `<div class="sub">DBA ${esc(r.dba_name)}</div>` : ""}<div class="ids">${esc(x.mc)} · DOT ${x.dot}</div></td>
+      <td class="c-status"><span class="pill">● Active</span><div class="sub">MC &amp; USDOT</div></td>
       <td class="c-person">${x.people.length ? `<div class="person">${esc(x.people[0])}</div>${x.people[1] ? `<div class="sub">${esc(x.people.slice(1).join(", "))}</div>` : ""}` : `<span class="sub">Not listed</span>`}</td>
       <td class="c-phone">${phone ? `<span class="phone"><a href="${telHref(r.phone)}" data-stop>${esc(phone)}</a><button class="icon" type="button" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`}</td>
       <td class="email c-email">${email ? `<a href="mailto:${esc(email)}" data-stop>${esc(email)}</a>` : `<span class="sub">–</span>`}</td>
@@ -775,7 +777,7 @@ function openDetail(dot) {
       <div>
         <h3>${esc(r.legal_name)}</h3>
         ${r.dba_name ? `<div class="dba">DBA ${esc(r.dba_name)}</div>` : ""}
-        <div class="idrow"><span class="pill">Active authority</span><span class="ids">${esc(x.mc)} · USDOT ${x.dot}</span></div>
+        <div class="idrow"><span class="pill">● MC active</span><span class="pill">● USDOT active</span><span class="ids">${esc(x.mc)} · USDOT ${x.dot}</span></div>
       </div>
       <button class="close" type="button" aria-label="Close" data-close>×</button>
     </header>
@@ -835,11 +837,11 @@ function openDetail(dot) {
 
 /* ---------- CSV ---------- */
 function csv() {
-  const head = ["Lead status", "Notes", "MC", "USDOT", "Legal name", "DBA", "Contact name", "Other contacts", "Phone", "Cell", "Email",
+  const head = ["Lead status", "Notes", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts", "Phone", "Cell", "Email",
     "Street", "City", "State", "ZIP", "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo", "Authority event", "Authority date",
     "Registered", "MCS-150 date", "Safety rating"];
   const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines = visible().map(({ r, dot, mc, people, authEvent, authDate }) => [LEAD[leadOf(dot)].label, noteOf(dot), mc, dot, r.legal_name, r.dba_name,
+  const lines = visible().map(({ r, dot, mc, people, authEvent, authDate }) => [LEAD[leadOf(dot)].label, noteOf(dot), mc, dot, "Active", "Active", r.legal_name, r.dba_name,
     people[0] || "", people.slice(1).join("; "), fmtPhone(r.phone), fmtPhone(r.cell_phone), (r.email_address || "").toLowerCase(),
     r.phy_street, r.phy_city, r.phy_state, r.phy_zip, num(r.power_units) ?? "", num(r.total_drivers) ?? "", num(r.total_cdl) ?? "",
     equipmentOf(r).join("; "), cargoOf(r).join("; "), authEvent, fmtDate(authDate), fmtDate(r.add_date), fmtDate(r.mcs150_date),

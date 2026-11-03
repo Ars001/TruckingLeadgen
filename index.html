@@ -282,7 +282,7 @@ footer.src p { margin: 0 0 4px; max-width: 90ch; }
         <table>
           <thead>
             <tr>
-              <th>Status</th><th>MC #</th><th>USDOT</th><th>Carrier</th><th>Location</th><th>Phone</th><th>Email</th>
+              <th>Status</th><th>MC #</th><th>USDOT</th><th>Carrier</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
               <th class="num">Trucks</th><th class="num">Drivers</th><th id="dateHead">Authority</th><th>Equipment</th>
             </tr>
           </thead>
@@ -591,6 +591,12 @@ function finish(f, pageFull = false) {
 function equipmentOf(r) {
   return Object.values(EQUIP).filter(e => e.cargo.some(c => r["crgo_" + c] === "X")).map(e => e.label);
 }
+function contactsOf(r) {
+  const names = [r.company_officer_1, r.company_officer_2]
+    .flatMap(v => String(v || "").split(/\s{2,}|\s*[,;/&]\s*|\s+AND\s+/i))
+    .map(s => titleCase(s.trim())).filter(Boolean);
+  return [...new Set(names)];
+}
 function cargoOf(r) {
   return CARGO.filter(([k]) => r["crgo_" + k] === "X").map(([k, l]) => k === "cargoothr" && r.crgo_cargoothr_desc ? `Other: ${titleCase(r.crgo_cargoothr_desc)}` : l);
 }
@@ -615,11 +621,11 @@ function render() {
 
   const body = $("#rows");
   if (!list.length) {
-    body.innerHTML = `<tr><td colspan="11" class="empty"><strong>No verified carriers match</strong>Try a wider date or MC range, a nearby city, or fewer equipment and cargo filters.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="12" class="empty"><strong>No verified carriers match</strong>Try a wider date or MC range, a nearby city, or fewer equipment and cargo filters.</td></tr>`;
     return;
   }
   body.innerHTML = list.map((x, i) => {
-    const r = x.r, eq = equipmentOf(r);
+    const r = x.r, eq = equipmentOf(r), people = contactsOf(r);
     const when = state.lastMode === "date"
       ? `${esc(fmtDate(x.authDate))}<div class="sub">${esc(x.authEvent)}</div>`
       : esc(fmtDate(r.add_date));
@@ -628,9 +634,10 @@ function render() {
       <td class="mcno">${esc(x.mc)}</td>
       <td class="mono">${x.dot}</td>
       <td><div class="name">${esc(r.legal_name)}</div>${r.dba_name ? `<div class="sub">DBA ${esc(r.dba_name)}</div>` : ""}</td>
-      <td>${esc(titleCase(r.phy_city))}, ${esc(r.phy_state)}<div class="sub mono">${esc((r.phy_zip || "").slice(0, 5))}</div></td>
+      <td style="white-space:nowrap">${people.length ? `<div class="name">${esc(people[0])}</div>${people[1] ? `<div class="sub">${esc(people.slice(1).join(", "))}</div>` : ""}` : `<span class="sub">Not listed</span>`}</td>
       <td class="mono" style="white-space:nowrap">${esc(fmtPhone(r.phone))}</td>
       <td class="email">${esc((r.email_address || "").toLowerCase())}</td>
+      <td>${esc(titleCase(r.phy_city))}, ${esc(r.phy_state)}<div class="sub mono">${esc((r.phy_zip || "").slice(0, 5))}</div></td>
       <td class="num">${num(r.power_units) ?? "–"}</td>
       <td class="num">${num(r.total_drivers) ?? "–"}<div class="sub">${num(r.total_cdl) ? num(r.total_cdl) + " CDL" : "Non-CDL"}</div></td>
       <td style="white-space:nowrap">${when}</td>
@@ -659,7 +666,7 @@ function openDetail(dot) {
       ${row("Phone", phone && `<span class="copyrow"><span class="mono">${esc(phone)}</span>${copyBtn(phone)}</span>`)}
       ${row("Cell", cell && `<span class="copyrow"><span class="mono">${esc(cell)}</span>${copyBtn(cell)}</span>`)}
       ${row("Email", email && `<span class="copyrow"><span class="email">${esc(email)}</span>${copyBtn(email)}</span>`)}
-      ${row("Officers", [r.company_officer_1, r.company_officer_2].filter(Boolean).map(o => esc(titleCase(o))).join("<br>"))}
+      ${row("Owner / officers", contactsOf(r).map(esc).join("<br>"))}
       ${row("Address", `${esc(titleCase(r.phy_street))}<br>${esc(titleCase(r.phy_city))}, ${esc(r.phy_state)} ${esc(r.phy_zip)}`)}
     </dl></section>
     <section><h4>Authority</h4><dl class="kv">
@@ -697,11 +704,11 @@ function openDetail(dot) {
 
 /* ---------- CSV ---------- */
 function csv() {
-  const head = ["MC", "USDOT", "Legal name", "DBA", "Street", "City", "State", "ZIP", "Phone", "Cell", "Email", "Officer 1", "Officer 2",
+  const head = ["MC", "USDOT", "Legal name", "DBA", "Contact name", "Other contacts", "Phone", "Cell", "Email", "Street", "City", "State", "ZIP",
     "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo", "Authority event", "Authority date", "Registered", "MCS-150 date", "Safety rating"];
   const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines = sorted().map(({ r, dot, mc, authEvent, authDate }) => [mc, dot, r.legal_name, r.dba_name, r.phy_street, r.phy_city, r.phy_state, r.phy_zip,
-    fmtPhone(r.phone), fmtPhone(r.cell_phone), (r.email_address || "").toLowerCase(), r.company_officer_1, r.company_officer_2,
+  const lines = sorted().map(({ r, dot, mc, authEvent, authDate }) => [mc, dot, r.legal_name, r.dba_name, contactsOf(r)[0] || "", contactsOf(r).slice(1).join("; "),
+    fmtPhone(r.phone), fmtPhone(r.cell_phone), (r.email_address || "").toLowerCase(), r.phy_street, r.phy_city, r.phy_state, r.phy_zip,
     num(r.power_units) ?? "", num(r.total_drivers) ?? "", num(r.total_cdl) ?? "", equipmentOf(r).join("; "), cargoOf(r).join("; "),
     authEvent, fmtDate(authDate), fmtDate(r.add_date), fmtDate(r.mcs150_date), RATING[r.safety_rating] || ""].map(q).join(","));
   return [head.join(","), ...lines].join("\n");

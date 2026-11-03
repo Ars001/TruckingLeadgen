@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Carrier Scout</title>
-<meta name="description" content="Find active, MC-authorized US trucking carriers with owner names and phone numbers, straight from FMCSA data.">
+<meta name="description" content="Find new MC carriers with owner names and phone numbers, then work them through calls, follow-ups and a pipeline until they sign.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: guide-sign header, a search bar card across the top with folding extra filters, then a full-width call list. Phones get cards instead of a table. */
+/* Layout: guide-sign header, a sticky page nav, then one view at a time: Find carriers, Today, Pipeline, Customers, Scripts, Guide. */
 :root {
   --bg: #eef2ef;
   --surface: #ffffff;
@@ -24,6 +24,7 @@
   --info: #1d5fa8; --info-soft: #e1ecf9;
   --warn: #8f5b00; --warn-soft: #fbefd6;
   --bad: #b3261e; --bad-soft: #fbe3e1;
+  --violet: #6b3fa0; --violet-soft: #efe6f8;
   --shadow: 0 1px 2px rgba(16, 40, 28, .06), 0 8px 24px rgba(16, 40, 28, .06);
   --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
@@ -34,7 +35,7 @@
     --bg: #0d1411; --surface: #141e19; --surface-2: #19251f; --ink: #e3ebe6; --muted: #93a39a; --line: #2a3832;
     --accent: #0f7a4e; --accent-ink: #ffffff; --accent-soft: #173a2a;
     --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
-    --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b;
+    --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
     color-scheme: dark;
   }
@@ -43,7 +44,7 @@
   --bg: #0d1411; --surface: #141e19; --surface-2: #19251f; --ink: #e3ebe6; --muted: #93a39a; --line: #2a3832;
   --accent: #0f7a4e; --accent-ink: #ffffff; --accent-soft: #173a2a;
   --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
-  --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b;
+  --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
   color-scheme: dark;
 }
@@ -56,6 +57,8 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .sub { font-size: 12px; color: var(--muted); }
+h2.title { margin: 0; font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: .02em; line-height: 1.05; }
+.lede { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
 
 .wrap { max-width: 1400px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
@@ -67,10 +70,22 @@ a { color: inherit; }
 .sign .route { font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; background: #fff; color: #0d6a44; border-radius: 4px; padding: 3px 7px; }
 .sign p { margin: 0; flex: 1 1 260px; font-size: 13px; opacity: .92; min-width: 0; }
 
+/* Page nav */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.nav a { display: inline-flex; align-items: center; gap: 7px; padding: 12px 14px 11px; text-decoration: none; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+.nav .count { background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; font-size: 11px; padding: 0 7px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.nav .count.hot { background: var(--bad); border-color: var(--bad); color: #fff; }
+
 main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
+.view { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 
 /* Search card */
-.searchcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 16px; display: grid; gap: 14px; }
+.searchcard { padding: 16px; display: grid; gap: 14px; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -4px -4px 0; padding: 0 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
 .tabs button { border: 0; background: none; padding: 8px 12px 10px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
 .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
@@ -80,20 +95,22 @@ main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .field > span { font-size: 12px; font-weight: 500; color: var(--muted); }
 .field input, .field select, .field textarea { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 10px; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.field textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 .w-date { width: 160px; } .w-mc { width: 150px; } .w-city { width: 200px; } .w-state { width: 130px; } .w-zip { width: 120px; } .w-event { width: 210px; }
 @media (max-width: 560px) { .w-date, .w-mc, .w-zip, .w-state { width: calc(50% - 6px); } .w-city, .w-event { width: 100%; } }
 .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.presets .sub { margin-right: 2px; }
-.buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; font-weight: 500; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .btn:hover { border-color: var(--accent); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; padding-inline: 20px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; padding-inline: 18px; }
 .btn.primary:disabled { opacity: .6; cursor: progress; }
 .btn.small { padding: 5px 10px; font-size: 12.5px; border-radius: 999px; }
 .btn.small[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-.badge { background: var(--accent); color: var(--accent-ink); border-radius: 999px; font-size: 11px; font-weight: 600; padding: 0 7px; line-height: 18px; }
+.btn.danger { color: var(--bad); }
+.btn.danger:hover { border-color: var(--bad); }
 .btn.link { border: 0; background: none; padding: 4px 2px; color: var(--muted); text-decoration: underline; }
+.badge { background: var(--accent); color: var(--accent-ink); border-radius: 999px; font-size: 11px; font-weight: 600; padding: 0 7px; line-height: 18px; }
 
 .more { border-top: 1px dashed var(--line); padding-top: 14px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
 .group { display: grid; gap: 8px; align-content: start; min-width: 0; }
@@ -117,21 +134,20 @@ details.cargo[open] summary::after { content: "▴"; }
 .note { font-size: 12px; color: var(--muted); margin: 0; }
 
 /* Results */
-.results { display: grid; gap: 12px; min-width: 0; }
 .summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
 .count { font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: .02em; }
 .count small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
 .excluded { font-size: 12.5px; color: var(--muted); }
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.toolbar .search { flex: 1 1 260px; position: relative; min-width: 0; }
-.toolbar .search input { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 10px 9px 34px; }
-.toolbar .search input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
-.toolbar .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); }
+.search { flex: 1 1 260px; position: relative; min-width: 0; }
+.search input { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 10px 9px 34px; }
+.search input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); }
 .toolbar select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px; }
-.leadtabs { display: flex; flex-wrap: wrap; gap: 6px; }
-.leadtabs button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
-.leadtabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.leadtabs b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pills button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
+.pills button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.pills b { font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .status { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
 .status .bar { width: 120px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; flex: none; }
@@ -140,12 +156,12 @@ details.cargo[open] summary::after { content: "▴"; }
 @media (prefers-reduced-motion: reduce) { .status .bar i { animation: none; width: 100%; opacity: .6; } }
 .error { background: var(--bad-soft); color: var(--bad); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
 
-.tablebox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow-x: auto; }
+.tablebox { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 1060px; }
 th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; }
 td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-tbody tr { cursor: pointer; }
-tbody tr:hover { background: var(--surface-2); }
+tbody tr[data-i] { cursor: pointer; }
+tbody tr[data-i]:hover { background: var(--surface-2); }
 tbody tr:last-child td { border-bottom: 0; }
 tr.done td { opacity: .55; }
 .cname { font-weight: 600; }
@@ -161,38 +177,96 @@ td.email a { white-space: nowrap; text-decoration: none; }
 td.email a:hover { text-decoration: underline; color: var(--accent); }
 td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tag { display: inline-block; font-size: 11.5px; border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; margin: 0 4px 4px 0; white-space: nowrap; }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; white-space: nowrap; background: var(--ok-soft); color: var(--ok); }
 
-select.lead { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface-2); max-width: 140px; }
-select.lead.s-noanswer { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
-select.lead.s-callback { background: var(--info-soft); color: var(--info); border-color: transparent; }
-select.lead.s-interested { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
-select.lead.s-notint { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
-.hasnote { display: inline-block; margin-top: 4px; font-size: 11px; color: var(--muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Stage colours */
+.st-new { background: var(--surface-2); color: var(--ink); }
+.st-contacted { background: var(--warn-soft); color: var(--warn); }
+.st-interested { background: var(--info-soft); color: var(--info); }
+.st-negotiating { background: var(--violet-soft); color: var(--violet); }
+.st-signed { background: var(--ok-soft); color: var(--ok); }
+.st-lost { background: var(--bad-soft); color: var(--bad); }
+select.stage { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface); max-width: 140px; }
+select.stage[class*="st-"] { border-color: transparent; }
+.chipstage { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.lastnote { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.due { display: inline-block; font-size: 11px; font-weight: 600; margin-top: 4px; white-space: nowrap; }
+.due.over { color: var(--bad); }
+.due.today { color: var(--warn); }
+.due.later { color: var(--muted); }
 
 .empty { padding: 44px 20px; text-align: center; color: var(--muted); }
 .empty strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
 .showmore { justify-self: center; }
 
 td.c-meta { display: none; }
-
-/* Phone-width call cards */
 @media (max-width: 760px) {
-  table { min-width: 0; }
-  thead { display: none; }
-  tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 14px; border-bottom: 1px solid var(--line); }
-  tbody tr:last-child { border-bottom: 0; }
-  td { border: 0; padding: 0; }
-  td.c-carrier { grid-column: 1; grid-row: 1; }
-  td.c-lead { grid-column: 2; grid-row: 1; text-align: right; }
-  td.c-status, td.c-person, td.c-phone, td.c-email, td.c-loc, td.c-meta { grid-column: 1 / -1; }
-  td.c-status .sub { display: inline; margin-left: 6px; }
-  td.c-fleet, td.c-date, td.c-eq { display: none; }
-  td.c-meta { display: block; }
+  #results table { min-width: 0; }
+  #results thead { display: none; }
+  #results tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 14px; border-bottom: 1px solid var(--line); }
+  #results tbody tr:last-child { border-bottom: 0; }
+  #results td { border: 0; padding: 0; }
+  #results td.c-carrier { grid-column: 1; grid-row: 1; }
+  #results td.c-lead { grid-column: 2; grid-row: 1; text-align: right; }
+  #results td.c-status, #results td.c-person, #results td.c-phone, #results td.c-email, #results td.c-loc, #results td.c-meta { grid-column: 1 / -1; }
+  #results td.c-status .sub { display: inline; margin-left: 6px; }
+  #results td.c-fleet, #results td.c-date, #results td.c-eq { display: none; }
+  #results td.c-meta { display: block; }
   .person { white-space: normal; }
 }
 
+/* Today */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.tile { padding: 14px 16px; display: grid; gap: 2px; }
+.tile .n { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1; }
+.tile.over .n { color: var(--bad); }
+.tile.today .n { color: var(--warn); }
+.tile .k { font-size: 12.5px; color: var(--muted); }
+.list { display: grid; }
+.list h3 { margin: 0; padding: 12px 16px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; }
+.item { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 8px 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); align-items: center; }
+.item:last-child { border-bottom: 0; }
+.item .who { min-width: 0; cursor: pointer; }
+.item .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 760px) { .item { grid-template-columns: minmax(0, 1fr); } .item .acts { justify-content: flex-start; } }
+
+/* Pipeline board */
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 6px; align-items: start; }
+.col { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; display: grid; grid-template-rows: auto 1fr; min-height: 220px; }
+.col header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.col header b { font-size: 13px; }
+.col .cards { display: grid; gap: 8px; padding: 10px; align-content: start; min-height: 120px; }
+.col.over { outline: 2px dashed var(--accent); outline-offset: -4px; }
+.kcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.kcard:active { cursor: grabbing; }
+.kcard.dragging { opacity: .4; }
+.kcard .cname { font-size: 13.5px; }
+.kcard .phone a { font-size: 12.5px; }
+
+/* Customers */
+.progress { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.progress .track { width: 80px; height: 6px; background: var(--line); border-radius: 6px; overflow: hidden; }
+.progress .fill { height: 100%; background: var(--ok); }
+
+/* Scripts and guide */
+.twocol { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .twocol { grid-template-columns: minmax(0, 1fr); } }
+.panel { padding: 16px; display: grid; gap: 12px; }
+.panel h3 { margin: 0; font-size: 15px; }
+.fields3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.placeholders { display: flex; flex-wrap: wrap; gap: 6px; }
+.placeholders code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+.guide { padding: 20px; display: grid; gap: 18px; max-width: 860px; }
+.guide h3 { margin: 0; font-family: var(--font-display); font-size: 22px; letter-spacing: .02em; }
+.guide p, .guide li { max-width: 72ch; }
+.guide ol, .guide ul { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.guide .callout { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; }
+.objections { display: grid; gap: 10px; }
+.objections div { border-left: 3px solid var(--line); padding-left: 12px; }
+.objections b { display: block; }
+
 /* Carrier detail panel */
-dialog { border: 0; padding: 0; margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(540px, 100%); max-width: 100%; background: var(--surface); color: var(--ink); box-shadow: -12px 0 40px rgba(0,0,0,.2); }
+dialog { border: 0; padding: 0; margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(560px, 100%); max-width: 100%; background: var(--surface); color: var(--ink); box-shadow: -12px 0 40px rgba(0,0,0,.2); }
 dialog::backdrop { background: rgba(10, 20, 15, .45); }
 .sheet { display: grid; gap: 18px; padding: calc(env(safe-area-inset-top, 0px) + 18px) max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) 20px; }
 .sheet header { display: flex; gap: 12px; align-items: flex-start; }
@@ -200,23 +274,29 @@ dialog::backdrop { background: rgba(10, 20, 15, .45); }
 .sheet h3 { margin: 0; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.05; letter-spacing: .02em; text-wrap: balance; }
 .sheet .dba { color: var(--muted); font-size: 13px; margin-top: 3px; }
 .sheet .idrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
-.pill { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; white-space: nowrap; background: var(--ok-soft); color: var(--ok); }
 .close { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; line-height: 1; flex: none; }
 .callcard { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
 .callcard .who { font-size: 18px; font-weight: 600; }
 .callcard .actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.leadpick { display: flex; flex-wrap: wrap; gap: 6px; }
-.leadpick button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
-.leadpick button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.pickrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.pickrow button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
+.pickrow button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .sheet section { display: grid; gap: 8px; }
 .sheet h4 { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
 .kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 6px 12px; margin: 0; }
 .kv dt { color: var(--muted); font-size: 13px; }
 .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-textarea#note { min-height: 80px; resize: vertical; }
+.log { display: grid; gap: 8px; max-height: 240px; overflow: auto; }
+.log div { border-left: 2px solid var(--line); padding-left: 10px; }
+.log time { display: block; font-size: 11px; color: var(--muted); }
+.addnote { display: flex; gap: 8px; }
+.addnote input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; }
+.checklist { display: grid; gap: 4px; }
+pre.script { white-space: pre-wrap; font-family: var(--font-body); font-size: 13.5px; line-height: 1.6; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 0; max-height: 320px; overflow: auto; }
+details.fold summary { cursor: pointer; font-weight: 600; }
 .links { display: flex; flex-wrap: wrap; gap: 12px; }
 .links a { color: var(--accent); font-weight: 500; }
-.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 8px; font-size: 13px; z-index: 50; box-shadow: var(--shadow); }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 8px; font-size: 13px; z-index: 50; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 footer.src { font-size: 12px; color: var(--muted); padding-block: 0 32px; }
 footer.src p { margin: 0 0 4px; max-width: 95ch; }
 </style>
@@ -228,102 +308,111 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <div class="sign">
       <span class="route">FMCSA</span>
       <h1>Carrier Scout</h1>
-      <p>Active, MC-authorized US carriers with owner names and phone numbers. Live from FMCSA data, updated daily.</p>
+      <p>Find new MC carriers with owner names and phone numbers, then call, follow up and sign them. Live FMCSA data, updated daily.</p>
     </div>
   </div>
 </div>
 
+<nav class="nav" aria-label="Pages">
+  <div class="wrap">
+    <a href="#find" data-view="find">Find carriers</a>
+    <a href="#today" data-view="today">Today <span class="count" id="navToday">0</span></a>
+    <a href="#pipeline" data-view="pipeline">Pipeline <span class="count" id="navPipe">0</span></a>
+    <a href="#customers" data-view="customers">Customers <span class="count" id="navCust">0</span></a>
+    <a href="#scripts" data-view="scripts">Scripts &amp; emails</a>
+    <a href="#guide" data-view="guide">Dispatch guide</a>
+  </div>
+</nav>
+
 <main class="wrap">
-  <form class="searchcard" id="search" novalidate>
-    <div class="tabs" role="tablist" aria-label="Search by">
-      <button type="button" role="tab" data-mode="date" aria-selected="true">New authority</button>
-      <button type="button" role="tab" data-mode="location" aria-selected="false">City / state</button>
-      <button type="button" role="tab" data-mode="mc" aria-selected="false">MC range</button>
-    </div>
 
-    <div class="searchrow">
-      <div class="modefields" data-for="date">
-        <label class="field w-date"><span>From</span><input type="date" id="dateFrom"></label>
-        <label class="field w-date"><span>To</span><input type="date" id="dateTo"></label>
-        <label class="field w-event"><span>Authority</span>
-          <select id="event">
-            <option value="granted">Newly granted</option>
-            <option value="reinstated">Reinstated</option>
-            <option value="both">Granted or reinstated</option>
-          </select>
-        </label>
+  <!-- ============ FIND CARRIERS ============ -->
+  <section class="view" id="view-find">
+    <form class="card searchcard" id="search" novalidate>
+      <div class="tabs" role="tablist" aria-label="Search by">
+        <button type="button" role="tab" data-mode="date" aria-selected="true">New authority</button>
+        <button type="button" role="tab" data-mode="location" aria-selected="false">City / state</button>
+        <button type="button" role="tab" data-mode="mc" aria-selected="false">MC range</button>
       </div>
-      <div class="modefields" data-for="location" hidden>
-        <label class="field w-city"><span>City</span><input id="city" placeholder="e.g. Dallas" autocomplete="off"></label>
-        <label class="field w-state"><span>State</span><select id="state"></select></label>
-        <label class="field w-zip"><span>ZIP starts with</span><input id="zip" class="mono" inputmode="numeric" placeholder="752"></label>
-      </div>
-      <div class="modefields" data-for="mc" hidden>
-        <label class="field w-mc"><span>From MC</span><input id="mcStart" class="mono" inputmode="numeric" placeholder="1600000"></label>
-        <label class="field w-mc"><span>To MC</span><input id="mcEnd" class="mono" inputmode="numeric" placeholder="1600500"></label>
-      </div>
-      <div class="buttons">
-        <button class="btn" type="button" id="moreBtn" aria-expanded="false" aria-controls="more">More filters <span class="badge" id="moreCount" hidden></span></button>
-        <button class="btn primary" id="go" type="submit">Find carriers</button>
-      </div>
-    </div>
-
-    <div class="presets" data-for="date">
-      <span class="sub">Quick pick:</span>
-      <button type="button" class="btn small" data-days="0">Today</button>
-      <button type="button" class="btn small" data-days="1">Yesterday + today</button>
-      <button type="button" class="btn small" data-days="2">Last 3 days</button>
-      <button type="button" class="btn small" data-days="6">Last 7 days</button>
-      <button type="button" class="btn small" data-days="29">Last 30 days</button>
-    </div>
-    <p class="note" data-for="location" hidden>Shows the newest registrations first. Pick a state or type at least 3 ZIP digits.</p>
-    <p class="note" data-for="mc" hidden>Up to 5,000 MC numbers per search.</p>
-
-    <div class="more" id="more" hidden>
-      <div class="group">
-        <div class="label">Equipment <small>(estimated from fleet &amp; cargo)</small></div>
-        <div class="chips" id="equipment"></div>
-      </div>
-      <div class="group">
-        <div class="label">Cargo</div>
-        <details class="cargo">
-          <summary><span id="cargoSummary">All cargo types</span></summary>
-          <div class="checks" id="cargo"></div>
-        </details>
-      </div>
-      <div class="group">
-        <div class="label">Drivers</div>
-        <div class="seg" role="group" aria-label="Driver type" id="driver">
-          <button type="button" data-driver="both" aria-pressed="true">Any</button>
-          <button type="button" data-driver="cdl" aria-pressed="false">CDL</button>
-          <button type="button" data-driver="noncdl" aria-pressed="false">Non-CDL</button>
+      <div class="searchrow">
+        <div class="modefields" data-for="date">
+          <label class="field w-date"><span>From</span><input type="date" id="dateFrom"></label>
+          <label class="field w-date"><span>To</span><input type="date" id="dateTo"></label>
+          <label class="field w-event"><span>Authority</span>
+            <select id="event">
+              <option value="granted">Newly granted</option>
+              <option value="reinstated">Reinstated</option>
+              <option value="both">Granted or reinstated</option>
+            </select>
+          </label>
+        </div>
+        <div class="modefields" data-for="location" hidden>
+          <label class="field w-city"><span>City</span><input id="city" placeholder="e.g. Dallas" autocomplete="off"></label>
+          <label class="field w-state"><span>State</span><select id="state"></select></label>
+          <label class="field w-zip"><span>ZIP starts with</span><input id="zip" class="mono" inputmode="numeric" placeholder="752"></label>
+        </div>
+        <div class="modefields" data-for="mc" hidden>
+          <label class="field w-mc"><span>From MC</span><input id="mcStart" class="mono" inputmode="numeric" placeholder="1600000"></label>
+          <label class="field w-mc"><span>To MC</span><input id="mcEnd" class="mono" inputmode="numeric" placeholder="1600500"></label>
+        </div>
+        <div class="buttons">
+          <button class="btn" type="button" id="moreBtn" aria-expanded="false" aria-controls="more">More filters <span class="badge" id="moreCount" hidden></span></button>
+          <button class="btn primary" id="go" type="submit">Find carriers</button>
         </div>
       </div>
-      <div class="group">
-        <div class="label">Trucks (power units)</div>
-        <div class="pair">
-          <label class="field"><span>Min</span><input id="minTrucks" class="mono" inputmode="numeric" placeholder="1"></label>
-          <label class="field"><span>Max</span><input id="maxTrucks" class="mono" inputmode="numeric" placeholder="Any"></label>
+      <div class="presets" data-for="date">
+        <span class="sub">Quick pick:</span>
+        <button type="button" class="btn small" data-days="0">Today</button>
+        <button type="button" class="btn small" data-days="1">Yesterday + today</button>
+        <button type="button" class="btn small" data-days="2">Last 3 days</button>
+        <button type="button" class="btn small" data-days="6">Last 7 days</button>
+        <button type="button" class="btn small" data-days="29">Last 30 days</button>
+      </div>
+      <p class="note" data-for="location" hidden>Shows the newest registrations first. Pick a state or type at least 3 ZIP digits.</p>
+      <p class="note" data-for="mc" hidden>Up to 5,000 MC numbers per search.</p>
+      <div class="more" id="more" hidden>
+        <div class="group">
+          <div class="label">Equipment <small>(estimated from fleet &amp; cargo)</small></div>
+          <div class="chips" id="equipment"></div>
+        </div>
+        <div class="group">
+          <div class="label">Cargo</div>
+          <details class="cargo">
+            <summary><span id="cargoSummary">All cargo types</span></summary>
+            <div class="checks" id="cargo"></div>
+          </details>
+        </div>
+        <div class="group">
+          <div class="label">Drivers</div>
+          <div class="seg" role="group" aria-label="Driver type">
+            <button type="button" data-driver="both" aria-pressed="true">Any</button>
+            <button type="button" data-driver="cdl" aria-pressed="false">CDL</button>
+            <button type="button" data-driver="noncdl" aria-pressed="false">Non-CDL</button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="label">Trucks (power units)</div>
+          <div class="pair">
+            <label class="field"><span>Min</span><input id="minTrucks" class="mono" inputmode="numeric" placeholder="1"></label>
+            <label class="field"><span>Max</span><input id="maxTrucks" class="mono" inputmode="numeric" placeholder="Any"></label>
+          </div>
+        </div>
+        <div class="group">
+          <div class="label">Contact on file</div>
+          <label class="toggle"><input type="checkbox" id="hasPhone"> Has a phone number</label>
+          <label class="toggle"><input type="checkbox" id="hasEmail"> Has an email address</label>
+        </div>
+        <div class="group">
+          <div class="label">&nbsp;</div>
+          <button type="button" class="btn link" id="reset">Clear all filters</button>
         </div>
       </div>
-      <div class="group">
-        <div class="label">Contact on file</div>
-        <label class="toggle"><input type="checkbox" id="hasPhone"> Has a phone number</label>
-        <label class="toggle"><input type="checkbox" id="hasEmail"> Has an email address</label>
-      </div>
-      <div class="group">
-        <div class="label">&nbsp;</div>
-        <button type="button" class="btn link" id="reset">Clear all filters</button>
-      </div>
-    </div>
-  </form>
+    </form>
 
-  <section class="results" aria-live="polite">
     <div class="summary">
       <div class="count" id="count">0<small>carriers</small></div>
       <span class="excluded" id="excluded"></span>
     </div>
-
     <div class="toolbar">
       <div class="search">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
@@ -338,16 +427,14 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <button class="btn" id="copyCsv" type="button">Copy CSV</button>
       <button class="btn" id="saveCsv" type="button">Download CSV</button>
     </div>
-    <div class="leadtabs" id="leadtabs" role="group" aria-label="Lead status"></div>
-
+    <div class="pills" id="stagetabs" role="group" aria-label="Pipeline stage"></div>
     <div class="status" id="status" hidden><span class="bar"><i></i></span><span id="statusText"></span></div>
     <div class="error" id="error" hidden></div>
-
-    <div class="tablebox">
+    <div class="card tablebox" id="results">
       <table>
         <thead>
           <tr>
-            <th>Lead status</th><th>Carrier</th><th>MC status</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
+            <th>Pipeline</th><th>Carrier</th><th>MC status</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
             <th>Fleet</th><th id="dateHead">Authority date</th><th>Equipment</th>
           </tr>
         </thead>
@@ -358,10 +445,132 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <button class="btn showmore" id="more500" type="button" hidden>Load next 500 from FMCSA</button>
   </section>
 
+  <!-- ============ TODAY ============ -->
+  <section class="view" id="view-today" hidden>
+    <div>
+      <h2 class="title">Today's calls</h2>
+      <p class="lede">Follow-ups that are due, then new leads you haven't called yet. Set a follow-up on any carrier from its detail panel.</p>
+    </div>
+    <div class="tiles" id="todayTiles"></div>
+    <div id="todayLists" class="view"></div>
+  </section>
+
+  <!-- ============ PIPELINE ============ -->
+  <section class="view" id="view-pipeline" hidden>
+    <div>
+      <h2 class="title">Pipeline</h2>
+      <p class="lede">Drag a carrier to move it to the next stage, or click it to log a call, add notes and set a follow-up.</p>
+    </div>
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+        <input id="pq" type="search" placeholder="Filter the pipeline…" autocomplete="off" aria-label="Filter pipeline">
+      </div>
+    </div>
+    <div class="board" id="board"></div>
+  </section>
+
+  <!-- ============ CUSTOMERS ============ -->
+  <section class="view" id="view-customers" hidden>
+    <div>
+      <h2 class="title">Customers</h2>
+      <p class="lede">Carriers you've signed. Track their truck, your percentage and onboarding paperwork. Move a carrier to "Signed" to add it here.</p>
+    </div>
+    <div class="card tablebox">
+      <table style="min-width:900px">
+        <thead><tr><th>Carrier</th><th>Owner</th><th>Phone</th><th>Truck</th><th>Your %</th><th>Since</th><th>Onboarding</th><th>Lanes</th></tr></thead>
+        <tbody id="custRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ SCRIPTS ============ -->
+  <section class="view" id="view-scripts" hidden>
+    <div>
+      <h2 class="title">Scripts &amp; emails</h2>
+      <p class="lede">Your details fill in the call script and email templates. Edit any template; changes save automatically in this browser.</p>
+    </div>
+    <div class="card panel">
+      <h3>Your details</h3>
+      <div class="fields3">
+        <label class="field"><span>Your name</span><input id="meName" placeholder="Ali Khan"></label>
+        <label class="field"><span>Dispatch company</span><input id="meCompany" placeholder="Swift Lane Dispatch"></label>
+        <label class="field"><span>Your phone</span><input id="mePhone" placeholder="+1 (555) 010-2030"></label>
+        <label class="field"><span>Your email</span><input id="meEmail" placeholder="ali@swiftlane.com"></label>
+        <label class="field"><span>Your dispatch fee %</span><input id="mePercent" class="mono" inputmode="decimal" placeholder="8"></label>
+      </div>
+      <div class="placeholders"><span class="sub">Placeholders you can use:</span><code>{owner}</code><code>{ownerFull}</code><code>{company}</code><code>{mc}</code><code>{city}</code><code>{state}</code><code>{trucks}</code><code>{equipment}</code><code>{myName}</code><code>{myCompany}</code><code>{myPhone}</code><code>{myEmail}</code><code>{percent}</code></div>
+    </div>
+    <div class="twocol" id="templateEditors"></div>
+    <div class="card panel">
+      <h3>Backup</h3>
+      <p class="note">Your pipeline, notes, follow-ups, customers and templates live in this browser. Download a backup now and then, and restore it on another computer or after clearing the browser.</p>
+      <div class="buttons">
+        <button class="btn" type="button" id="backupBtn">Download backup</button>
+        <label class="btn" for="restoreFile">Restore from backup</label>
+        <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+        <button class="btn link" type="button" id="resetTemplates">Reset templates to default</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GUIDE ============ -->
+  <section class="view" id="view-guide" hidden>
+    <div class="card guide">
+      <div>
+        <h2 class="title">Dispatch guide</h2>
+        <p class="lede">A practical path from your first call to getting paid. Use it to train new dispatchers on your team.</p>
+      </div>
+
+      <div>
+        <h3>From first call to getting paid</h3>
+        <ol>
+          <li><b>Learn the basics first.</b> Know the trailer types, how load boards work, what a broker does, and what a rate confirmation, BOL and POD are. Don't pay for a load board until you have a carrier.</li>
+          <li><b>Find carriers to call.</b> New authorities (last 7–30 days) are the warmest leads: they have trucks and no customers yet. Use <a href="#find">Find carriers</a> and filter by equipment you know how to book.</li>
+          <li><b>Make the call.</b> Ask for the owner by name, keep it short, and ask about equipment and lanes before you pitch. Use the script under <a href="#scripts">Scripts &amp; emails</a>.</li>
+          <li><b>Follow up.</b> Most carriers sign on the 2nd to 5th touch. Log every call and set a follow-up; work your <a href="#today">Today</a> list daily.</li>
+          <li><b>Sign them.</b> Send a simple dispatch agreement (your %, what you do, how either side can stop). Move them to "Signed".</li>
+          <li><b>Collect the carrier packet documents.</b> MC authority letter, W-9, certificate of insurance, and factoring or bank details. Track them on the customer's checklist.</li>
+          <li><b>Find a load.</b> Search the load board for their equipment and lane. Check the broker's credit and days-to-pay before you call.</li>
+          <li><b>Negotiate the rate.</b> Know the lane's going rate per mile. Ask for more than you need, and never accept the first offer without countering.</li>
+          <li><b>Get the rate confirmation.</b> Check pickup and delivery times, addresses, rate, detention and lumper terms before the carrier signs it.</li>
+          <li><b>Dispatch and track.</b> Send the driver the load details, check in at pickup and delivery, and update the broker before they have to ask.</li>
+          <li><b>Close it out.</b> The signed BOL becomes the proof of delivery. Send POD and invoice to the broker or the factoring company.</li>
+          <li><b>Get paid.</b> Invoice the carrier your percentage once they're paid for the load.</li>
+        </ol>
+      </div>
+
+      <div class="callout">
+        <b>Typical dispatch fee:</b> most dispatchers charge 5–10% of the gross load pay. Box trucks and hotshots often pay a flat weekly fee instead. Charge only when the carrier gets paid.
+      </div>
+
+      <div>
+        <h3>Handling common objections</h3>
+        <div class="objections">
+          <div><b>"I already have a dispatcher."</b>Ask how it's going and what they'd change. Leave your number and set a follow-up for 30 days; many dispatcher relationships don't last.</div>
+          <div><b>"I find my own loads."</b>Respect it. Ask how many hours a week that takes, and offer to book just one load so they can compare.</div>
+          <div><b>"Your fee is too high."</b>Talk in dollars: if you get them $300 more per load and your fee is $200, they're ahead. Offer a trial load at your normal rate.</div>
+          <div><b>"I'm not ready yet / no insurance yet."</b>New authorities often wait on insurance. Ask when it's expected and set the follow-up for that week.</div>
+          <div><b>"Send me an email."</b>Say yes, send it within the hour, and ask for a good time to call back. Use the intro email template.</div>
+        </div>
+      </div>
+
+      <div>
+        <h3>Daily routine that works</h3>
+        <ul>
+          <li>Start with your <a href="#today">Today</a> list: overdue follow-ups first, then due today.</li>
+          <li>Block 2 hours for new calls. Aim for 40–60 dials; log every outcome.</li>
+          <li>Move carriers through the <a href="#pipeline">Pipeline</a> as soon as something changes.</li>
+          <li>End the day by setting follow-ups for everyone you talked to.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <footer class="src">
-    <p>Every carrier shown has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
-    <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers listed on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo (machinery, construction, oilfield) on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data, so check them before you book a load.</p>
-    <p>Lead statuses and notes are saved in this browser only.</p>
+    <p>Every carrier in search results has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
+    <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data.</p>
+    <p>Your pipeline, notes, follow-ups and templates are saved in this browser only. Use Download backup under Scripts &amp; emails to keep a copy.</p>
   </footer>
 </main>
 
@@ -369,6 +578,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 <div class="toast" id="toast" hidden></div>
 
 <script>
+/* ===================== FMCSA data ===================== */
 const API = "https://data.transportation.gov/resource/";
 const DS = { census: "az4n-8mr2", motusHist: "yu5v-wbh6", motusCarrier: "inys-ebih", legacyCarrier: "6eyk-hxee" };
 
@@ -415,13 +625,6 @@ const EQUIP = {
   poweronly:  { label: "Power only",  where: `${Q.tractor} and ${Q.noTrailer}`, test: r => hasTractor(r) && !hasTrailer(r) },
   container:  { label: "Container",   where: Q.cargo(["intermodal"]), test: r => hasCargo(r, ["intermodal"]) }
 };
-const LEAD = {
-  new:        { label: "To call" },
-  noanswer:   { label: "No answer" },
-  callback:   { label: "Callback" },
-  interested: { label: "Interested" },
-  notint:     { label: "Not interested" }
-};
 const STATES = "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(" ");
 const CENSUS_FIELDS = ["dot_number", "legal_name", "dba_name", "phy_street", "phy_city", "phy_state", "phy_zip", "phone", "cell_phone",
   "email_address", "company_officer_1", "company_officer_2", "power_units", "truck_units", "total_drivers", "total_cdl", "mcs150_date",
@@ -429,16 +632,132 @@ const CENSUS_FIELDS = ["dot_number", "legal_name", "dba_name", "phy_street", "ph
   "mcs150_mileage_year", "crgo_cargoothr_desc", "owntruck", "owntract", "owntrail", "trmtruck", "trmtract", "trmtrail",
   ...CARGO.map(([k]) => "crgo_" + k)];
 const PAGE = 500, SHOW_STEP = 100;
-const ICON_COPY = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
 
-const $ = s => document.querySelector(s);
-const state = {
-  mode: "date", driver: "both", equipment: new Set(), cargo: new Set(),
-  results: [], lastMode: "date", offset: 0, runId: 0, abort: null, lastFilters: null, excluded: {},
-  tab: "all", q: "", shown: SHOW_STEP, leads: {}
+/* ===================== CRM model ===================== */
+const STAGES = [
+  ["new", "New lead"], ["contacted", "Contacted"], ["interested", "Interested"],
+  ["negotiating", "Negotiating"], ["signed", "Signed"], ["lost", "Lost"]
+];
+const STAGE_LABEL = Object.fromEntries(STAGES);
+const ONBOARDING = [
+  ["agreement", "Dispatch agreement signed"], ["authority", "MC authority letter received"], ["w9", "W-9 received"],
+  ["coi", "Certificate of insurance received"], ["payment", "Factoring / bank details received"],
+  ["truck", "Truck & trailer details noted"], ["packets", "Carrier packets sent to brokers"]
+];
+const TRUCK_TYPES = ["Dry van", "Reefer", "Flatbed", "Step deck", "Double drop", "Box truck", "Power only", "Hotshot", "Container", "Other"];
+const DEFAULT_TEMPLATES = {
+  script: {
+    title: "Cold call script", subject: "",
+    body: `Hi, is this {owner}?
+
+This is {myName} with {myCompany}. I saw {company} recently got its MC authority. Congratulations.
+
+I'm a truck dispatcher. I help small fleets find good-paying loads, negotiate rates with brokers and handle the paperwork, so you can focus on driving.
+
+Quick question: what kind of trailer are you running, and which lanes do you like?
+[Listen. Note equipment, home base, preferred lanes and target rate per mile.]
+
+Are you finding loads yourself right now, or working with a dispatcher?
+[If yourself:] How many hours a week does that take you?
+
+We work for {percent}% of the gross load pay. No load, no fee, and no long contract.
+
+Would you like to try one load with us this week?
+[Yes:] Great. I'll email you a short agreement and ask for your MC authority letter, W-9 and insurance certificate.
+[Not now:] No problem. When's a good time to check back?`
+  },
+  intro: {
+    title: "Intro email (after no answer)", subject: "Dispatch help for {company}",
+    body: `Hi {owner},
+
+I tried calling you today. I'm {myName} with {myCompany}, a truck dispatch service.
+
+Congratulations on getting {company} ({mc}) up and running. We help new carriers like you:
+- find good-paying loads on your preferred lanes
+- negotiate rates with brokers
+- handle carrier packets, rate confirmations and invoices
+
+Our fee is {percent}% of the gross, only when you get paid. No long contract.
+
+Do you have 5 minutes for a quick call this week? You can reach me at {myPhone}.
+
+Thanks,
+{myName}
+{myCompany}
+{myPhone}`
+  },
+  followup: {
+    title: "Follow-up after a call", subject: "Great talking today, {owner}",
+    body: `Hi {owner},
+
+Thanks for your time on the phone today. As promised, here's a quick summary:
+
+- We find and book loads for your {equipment} on the lanes you prefer
+- We negotiate every rate and handle the broker paperwork
+- Our fee is {percent}% of the gross, only when you get paid
+
+If you'd like to try a load this week, just reply to this email or call me at {myPhone}.
+
+Thanks,
+{myName}
+{myCompany}`
+  },
+  onboarding: {
+    title: "Onboarding documents request", subject: "Next steps to start dispatching {company}",
+    body: `Hi {owner},
+
+Welcome aboard. To start booking loads for {company}, please send me:
+
+1. Signed dispatch agreement (attached)
+2. MC authority letter
+3. W-9
+4. Certificate of insurance
+5. Factoring company notice of assignment, or bank details for direct payment
+6. Truck and trailer details (type, length, max weight)
+7. Driver name and phone number
+
+As soon as I have these, I'll set you up with brokers and start finding loads.
+
+Thanks,
+{myName}
+{myCompany}
+{myPhone}`
+  }
 };
 
-/* ---------- helpers ---------- */
+const STORE_KEY = "carrier-scout-crm";
+let db = { carriers: {}, leads: {}, me: {}, templates: {} };
+
+function loadDb() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (raw && typeof raw === "object") db = { carriers: raw.carriers || {}, leads: raw.leads || {}, me: raw.me || {}, templates: raw.templates || {} };
+  } catch {}
+  // Carry over statuses and notes from the earlier version of the app.
+  try {
+    const old = JSON.parse(localStorage.getItem("carrier-scout-leads") || "null");
+    if (old && typeof old === "object") {
+      const map = { noanswer: "contacted", callback: "contacted", interested: "interested", notint: "lost" };
+      for (const [dot, v] of Object.entries(old)) {
+        if (db.leads[dot]) continue;
+        const stage = map[v.status] || "new";
+        db.leads[dot] = { stage, followUp: null, log: v.note ? [{ t: v.updated || Date.now(), kind: "note", text: v.note }] : [], customer: {}, added: v.updated || Date.now(), updated: v.updated || Date.now() };
+      }
+      localStorage.removeItem("carrier-scout-leads");
+      saveDb();
+    }
+  } catch {}
+}
+function saveDb() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+  catch { toast("Couldn't save: this browser's storage is full or blocked. Download a backup."); }
+}
+const template = k => ({ ...DEFAULT_TEMPLATES[k], ...(db.templates[k] || {}) });
+const leadOf = dot => db.leads[dot] || null;
+const stageOf = dot => db.leads[dot]?.stage || "";
+
+/* ===================== helpers ===================== */
+const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const num = v => { const n = parseInt(String(v ?? "").replace(/[^\d]/g, ""), 10); return Number.isFinite(n) ? n : null; };
 const digits = p => String(p || "").replace(/\D/g, "");
@@ -448,11 +767,33 @@ const fmtDate = ymd => { if (!ymd || ymd.length < 8) return ""; const d = new Da
 const isoToYmd = s => (s || "").replaceAll("-", "");
 const localIso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const RATING = { S: "Satisfactory", C: "Conditional", U: "Unsatisfactory" };
-const titleCase = s => String(s || "").toLowerCase().replace(/\b([a-z])/g, m => m.toUpperCase());
+const UPPER_WORDS = new Set(["llc", "llp", "lp", "usa", "ii", "iii", "iv", "dba", "pllc", "nyc"]);
+const titleCase = s => String(s || "").toLowerCase()
+  .replace(/(^|[\s\-/(&.])([a-z])/g, (m, p, ch) => p + ch.toUpperCase())
+  .replace(/\b([a-z]+)\b/gi, w => UPPER_WORDS.has(w.toLowerCase()) ? w.toUpperCase() : w);
+const ICON_COPY = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
+const fmtWhen = t => new Date(t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const startOfDay = (d = new Date()) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const endOfDay = (d = new Date()) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
 
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.hidden = false;
-  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2200);
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2400);
+}
+function copyText(text, done) {
+  const fallback = () => {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {}
+    ta.remove(); toast(ok ? done : "Copy isn't allowed here. Select the text and copy it yourself.");
+  };
+  try { navigator.clipboard.writeText(text).then(() => toast(done), fallback); } catch { fallback(); }
+}
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function soql(ds, params, signal) {
@@ -464,7 +805,6 @@ async function soql(ds, params, signal) {
   }
   return res.json();
 }
-
 async function inBatches(items, size, fn, onProgress) {
   const chunks = [];
   for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
@@ -480,24 +820,95 @@ async function inBatches(items, size, fn, onProgress) {
   return out;
 }
 
-function setStatus(text) {
-  $("#status").hidden = !text;
-  $("#statusText").textContent = text || "";
+/* ===================== carrier records ===================== */
+function contactsOf(r) {
+  const names = [r.company_officer_1, r.company_officer_2]
+    .flatMap(v => String(v || "").split(/\s{2,}|\s*[,;/&]\s*|\s+AND\s+/i))
+    .map(s => titleCase(s.trim())).filter(Boolean);
+  return [...new Set(names)];
+}
+const equipmentOf = r => Object.values(EQUIP).filter(e => e.test(r)).map(e => e.label);
+const cargoOf = r => CARGO.filter(([k]) => r["crgo_" + k] === "X").map(([k, l]) => k === "cargoothr" && r.crgo_cargoothr_desc ? `Other: ${titleCase(r.crgo_cargoothr_desc)}` : l);
+
+/* A compact, self-contained record of a carrier: what the CRM stores and every view renders. */
+function toCarrier(r, extra = {}) {
+  return {
+    dot: num(r.dot_number), mc: extra.mc || (r.docket1prefix && r.docket1 ? r.docket1prefix + r.docket1 : ""),
+    name: r.legal_name || "", dba: r.dba_name || "", people: contactsOf(r),
+    phone: r.phone || "", cell: r.cell_phone || "", email: (r.email_address || "").toLowerCase(),
+    street: titleCase(r.phy_street), city: titleCase(r.phy_city), state: r.phy_state || "", zip: r.phy_zip || "",
+    trucks: num(r.power_units) ?? 0, drivers: num(r.total_drivers) ?? 0, cdl: num(r.total_cdl) ?? 0,
+    equipment: equipmentOf(r), cargo: cargoOf(r), hazmat: r.hm_ind === "Y",
+    miles: num(r.mcs150_mileage), milesYear: r.mcs150_mileage_year || "",
+    added: r.add_date || "", mcs150: r.mcs150_date || "", rating: r.safety_rating || "", ratingDate: r.safety_rating_date || "",
+    classdef: r.classdef || "", authDate: extra.authDate || "", authEvent: extra.authEvent || "", authTypes: extra.authTypes || [],
+    authSource: extra.authSource || ""
+  };
+}
+/* The best record we have for a DOT: the live search result if it's on screen, otherwise the saved copy. */
+function carrierFor(dot) {
+  const live = state.results.find(x => x.dot === dot);
+  return live ? live.c : db.carriers[dot] || null;
 }
 
-/* ---------- lead statuses (this browser only) ---------- */
-function loadLeads() { try { state.leads = JSON.parse(localStorage.getItem("carrier-scout-leads") || "{}") || {}; } catch { state.leads = {}; } }
-function saveLeads() { try { localStorage.setItem("carrier-scout-leads", JSON.stringify(state.leads)); } catch {} }
-const leadOf = dot => state.leads[dot]?.status || "new";
-const noteOf = dot => state.leads[dot]?.note || "";
-function setLead(dot, patch) {
-  const cur = state.leads[dot] || {};
-  const next = { ...cur, ...patch, updated: Date.now() };
-  if ((next.status || "new") === "new" && !next.note) delete state.leads[dot]; else state.leads[dot] = next;
-  saveLeads();
+/* ===================== CRM actions ===================== */
+function ensureLead(dot) {
+  if (!db.leads[dot]) db.leads[dot] = { stage: "new", followUp: null, log: [], customer: {}, added: Date.now(), updated: Date.now() };
+  const live = state.results.find(x => x.dot === dot);
+  if (live) db.carriers[dot] = live.c;
+  return db.leads[dot];
+}
+function logActivity(dot, kind, text) {
+  const l = ensureLead(dot);
+  l.log.unshift({ t: Date.now(), kind, text });
+  l.updated = Date.now();
+}
+function setStage(dot, stage, silent) {
+  const l = ensureLead(dot);
+  if (l.stage === stage && !silent) { saveDb(); return; }
+  const was = l.stage;
+  l.stage = stage; l.updated = Date.now();
+  if (stage === "lost" || stage === "signed") l.followUp = null;
+  if (!silent && was !== stage) l.log.unshift({ t: Date.now(), kind: "stage", text: `Moved to ${STAGE_LABEL[stage]}` });
+  saveDb();
+}
+function setFollowUp(dot, when) {
+  const l = ensureLead(dot);
+  l.followUp = when ? new Date(when).toISOString() : null; l.updated = Date.now();
+  if (when) l.log.unshift({ t: Date.now(), kind: "followup", text: `Follow-up set for ${fmtWhen(when)}` });
+  saveDb();
+}
+function removeLead(dot) { delete db.leads[dot]; delete db.carriers[dot]; saveDb(); }
+const tomorrowAt = (h) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, 0, 0, 0); return d; };
+
+const CALL_OUTCOMES = {
+  noanswer:   { label: "No answer",        log: "Called, no answer",            stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => tomorrowAt(10) },
+  voicemail:  { label: "Left voicemail",   log: "Called, left voicemail",       stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 1); return d; } },
+  interested: { label: "Talked: interested", log: "Talked, interested",         stage: l => ["negotiating", "signed"].includes(l.stage) ? l.stage : "interested", follow: () => tomorrowAt(11) },
+  notnow:     { label: "Talked: not now",  log: "Talked, not ready yet",        stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 6); return d; } },
+  no:         { label: "Not interested",   log: "Talked, not interested",       stage: () => "lost", follow: () => null }
+};
+function logCall(dot, key) {
+  const o = CALL_OUTCOMES[key], l = ensureLead(dot);
+  l.log.unshift({ t: Date.now(), kind: "call", text: o.log });
+  const next = o.stage(l);
+  if (next !== l.stage) { l.log.unshift({ t: Date.now() + 1, kind: "stage", text: `Moved to ${STAGE_LABEL[next]}` }); l.stage = next; }
+  const f = o.follow();
+  l.followUp = f ? f.toISOString() : null;
+  l.updated = Date.now();
+  saveDb();
+  return f;
 }
 
-/* ---------- reading the form ---------- */
+/* ===================== search state ===================== */
+const state = {
+  mode: "date", driver: "both", equipment: new Set(), cargo: new Set(),
+  results: [], lastMode: "date", offset: 0, runId: 0, abort: null, lastFilters: null, excluded: {},
+  tab: "all", q: "", shown: SHOW_STEP, view: "find", pq: ""
+};
+
+function setStatus(text) { $("#status").hidden = !text; $("#statusText").textContent = text || ""; }
+
 function readFilters() {
   return {
     mode: state.mode, driver: state.driver, equipment: [...state.equipment], cargo: [...state.cargo],
@@ -508,7 +919,6 @@ function readFilters() {
     city: $("#city").value.trim(), st: $("#state").value, zip: digits($("#zip").value)
   };
 }
-
 function validate(f) {
   if (f.minTrucks != null && f.maxTrucks != null && f.minTrucks > f.maxTrucks) return "Minimum trucks is higher than maximum trucks.";
   if (f.mode === "date") {
@@ -524,7 +934,6 @@ function validate(f) {
   if (f.mode === "location" && !f.st && f.zip.length < 3) return "Pick a state, or type at least 3 digits of a ZIP code.";
   return null;
 }
-
 function censusClauses(f) {
   const w = ["status_code='A'"];
   if (f.equipment.length) w.push("(" + f.equipment.map(e => `(${EQUIP[e].where})`).join(" or ") + ")");
@@ -538,7 +947,6 @@ function censusClauses(f) {
   return w;
 }
 
-/* ---------- candidate sources ---------- */
 async function candidatesByDate(f, signal) {
   const reason = { granted: "reason='Granted'", reinstated: "starts_with(reason,'Reinstated')", both: "(reason='Granted' or starts_with(reason,'Reinstated'))" }[f.event];
   const rows = await soql(DS.motusHist, {
@@ -554,7 +962,6 @@ async function candidatesByDate(f, signal) {
   }
   return map;
 }
-
 async function candidatesByMc(f, signal) {
   const segs = [];
   for (let len = String(f.mcStart).length; len <= String(f.mcEnd).length; len++) {
@@ -574,7 +981,6 @@ async function candidatesByMc(f, signal) {
   }));
   return map;
 }
-
 async function censusForDots(dots, f, signal, onProgress) {
   return inBatches(dots, 150, chunk => soql(DS.census, {
     $select: CENSUS_FIELDS.join(","),
@@ -582,7 +988,6 @@ async function censusForDots(dots, f, signal, onProgress) {
     $limit: 1000
   }, signal), onProgress);
 }
-
 async function censusByLocation(f, offset, signal) {
   const w = [...censusClauses(f), "carrier_operation='A'", "classdef like '%AUTHORIZED FOR HIRE%'"];
   if (f.st) w.push(`phy_state='${f.st}'`);
@@ -591,9 +996,7 @@ async function censusByLocation(f, offset, signal) {
   return soql(DS.census, { $select: CENSUS_FIELDS.join(","), $where: w.join(" and "), $order: "add_date DESC, dot_number DESC", $limit: PAGE, $offset: offset }, signal);
 }
 
-/* ---------- authority verification ---------- */
 const isCarrierAuth = t => /Motor Carrier of/i.test(t || "");
-
 async function verify(dots, signal) {
   const quoted = c => c.map(d => `'${d}'`).join(",");
   const [motus, legacy] = await Promise.all([
@@ -630,7 +1033,6 @@ async function verify(dots, signal) {
   return out;
 }
 
-/* ---------- running a search ---------- */
 async function run(append = false) {
   const f = append ? state.lastFilters : readFilters();
   const problem = validate(f);
@@ -643,9 +1045,8 @@ async function run(append = false) {
   $("#go").disabled = true; $("#more500").hidden = true;
   if (!append) {
     state.results = []; state.offset = 0; state.excluded = {}; state.lastFilters = f; state.lastMode = f.mode; state.shown = SHOW_STEP;
-    saveFilters(f); setStatus("Starting search…"); render();
+    saveFilters(f); setStatus("Starting search…"); renderFind();
   }
-
   try {
     let census = [], cands = new Map(), pageFull = false;
     if (f.mode === "location") {
@@ -667,16 +1068,14 @@ async function run(append = false) {
     setStatus(`Checking authority for ${dots.length.toLocaleString()} carriers…`);
     const auth = dots.length ? await verify(dots, ctrl.signal) : new Map();
     if (runId !== state.runId) return;
-
     for (const r of census) {
       const dot = num(r.dot_number), a = auth.get(dot) || { state: "none" }, c = cands.get(dot) || {};
       if (a.state !== "active") { state.excluded[a.state] = (state.excluded[a.state] || 0) + 1; continue; }
-      state.results.push({
-        dot, r, auth: a, people: contactsOf(r),
-        mc: a.mc || c.mc || (r.docket1prefix && r.docket1 ? r.docket1prefix + r.docket1 : ""),
-        authDate: c.authDate || "", authEvent: c.authEvent || ""
-      });
+      const carrier = toCarrier(r, { mc: a.mc || c.mc, authDate: c.authDate, authEvent: c.authEvent, authTypes: a.types, authSource: a.source });
+      state.results.push({ dot, c: carrier });
+      if (db.carriers[dot]) db.carriers[dot] = carrier; // refresh saved copies with today's data
     }
+    saveDb();
     finish(f, pageFull);
   } catch (e) {
     if (e.name === "AbortError") return;
@@ -684,59 +1083,75 @@ async function run(append = false) {
     $("#go").disabled = false;
   }
 }
-
 function finish(f, pageFull = false) {
   setStatus(""); $("#go").disabled = false;
   $("#more500").hidden = !pageFull;
   $("#dateHead").textContent = f.mode === "date" ? "Authority date" : "Registered";
-  render();
+  renderFind();
 }
 
-/* ---------- derived data ---------- */
-function equipmentOf(r) { return Object.values(EQUIP).filter(e => e.test(r)).map(e => e.label); }
-function contactsOf(r) {
-  const names = [r.company_officer_1, r.company_officer_2]
-    .flatMap(v => String(v || "").split(/\s{2,}|\s*[,;/&]\s*|\s+AND\s+/i))
-    .map(s => titleCase(s.trim())).filter(Boolean);
-  return [...new Set(names)];
+/* Fill in saved carriers that came over from the old version without details. */
+async function backfillCarriers() {
+  const missing = Object.keys(db.leads).map(Number).filter(d => d && !db.carriers[d]);
+  if (!missing.length) return;
+  try {
+    const rows = await inBatches(missing, 150, c => soql(DS.census, { $select: CENSUS_FIELDS.join(","), $where: `dot_number in (${c.join(",")})`, $limit: 1000 }));
+    for (const r of rows) db.carriers[num(r.dot_number)] = toCarrier(r);
+    saveDb(); renderAll();
+  } catch {}
 }
-function cargoOf(r) {
-  return CARGO.filter(([k]) => r["crgo_" + k] === "X").map(([k, l]) => k === "cargoothr" && r.crgo_cargoothr_desc ? `Other: ${titleCase(r.crgo_cargoothr_desc)}` : l);
-}
-function matchesQuery(x, q) {
+
+/* ===================== Find view ===================== */
+function matchesQuery(c, q, dot) {
   if (!q) return true;
-  const r = x.r, qd = digits(q);
-  const hay = [r.legal_name, r.dba_name, x.people.join(" "), r.email_address, r.phy_city, r.phy_state, x.mc, x.dot, noteOf(x.dot)].join(" ").toLowerCase();
-  return q.toLowerCase().split(/\s+/).every(w => hay.includes(w) || (qd.length >= 3 && digits(r.phone + " " + r.cell_phone).includes(qd)));
+  const qd = digits(q), lead = leadOf(dot);
+  const hay = [c.name, c.dba, c.people.join(" "), c.email, c.city, c.state, c.mc, c.dot, lead?.log?.[0]?.text].join(" ").toLowerCase();
+  return q.toLowerCase().split(/\s+/).every(w => hay.includes(w) || (qd.length >= 3 && digits(c.phone + " " + c.cell).includes(qd)));
 }
-
-function sortedAll() {
+function sortedResults() {
   const list = [...state.results], by = $("#sort").value;
-  if (by === "trucks") list.sort((a, b) => (num(b.r.power_units) || 0) - (num(a.r.power_units) || 0));
-  else if (by === "name") list.sort((a, b) => (a.r.legal_name || "").localeCompare(b.r.legal_name || ""));
-  else if (by === "state") list.sort((a, b) => (a.r.phy_state || "").localeCompare(b.r.phy_state || "") || (a.r.phy_city || "").localeCompare(b.r.phy_city || ""));
-  else list.sort((a, b) => (b.authDate || b.r.add_date || "").localeCompare(a.authDate || a.r.add_date || "") || b.dot - a.dot);
+  if (by === "trucks") list.sort((a, b) => b.c.trucks - a.c.trucks);
+  else if (by === "name") list.sort((a, b) => a.c.name.localeCompare(b.c.name));
+  else if (by === "state") list.sort((a, b) => a.c.state.localeCompare(b.c.state) || a.c.city.localeCompare(b.c.city));
+  else list.sort((a, b) => (b.c.authDate || b.c.added).localeCompare(a.c.authDate || a.c.added) || b.dot - a.dot);
   return list;
 }
-function visible() {
-  return sortedAll().filter(x => (state.tab === "all" || leadOf(x.dot) === state.tab) && matchesQuery(x, state.q));
+function visibleResults() {
+  return sortedResults().filter(x => {
+    const s = stageOf(x.dot);
+    if (state.tab === "unsaved" && s) return false;
+    if (state.tab !== "all" && state.tab !== "unsaved" && s !== state.tab) return false;
+    return matchesQuery(x.c, state.q, x.dot);
+  });
+}
+function stageSelect(dot) {
+  const s = stageOf(dot);
+  const opts = (s ? "" : `<option value="" selected>+ Add to pipeline</option>`) + STAGES.map(([k, l]) => `<option value="${k}"${k === s ? " selected" : ""}>${l}</option>`).join("");
+  return `<select class="stage ${s ? "st-" + s : ""}" data-stage="${dot}" aria-label="Pipeline stage">${opts}</select>`;
+}
+function dueBadge(lead) {
+  if (!lead?.followUp) return "";
+  const t = new Date(lead.followUp), now = new Date();
+  const cls = t < now ? "over" : t <= endOfDay() ? "today" : "later";
+  const label = t < now ? "Overdue" : t <= endOfDay() ? "Today" : "Follow up";
+  return `<span class="due ${cls}">⏰ ${label} · ${esc(fmtWhen(t))}</span>`;
+}
+function phoneCell(c) {
+  const phone = fmtPhone(c.phone);
+  return phone ? `<span class="phone"><a href="${telHref(c.phone)}" data-stop>${esc(phone)}</a><button class="icon" type="button" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`;
+}
+function personCell(c) {
+  return c.people.length ? `<div class="person">${esc(c.people[0])}</div>${c.people[1] ? `<div class="sub">${esc(c.people.slice(1).join(", "))}</div>` : ""}` : `<span class="sub">Not listed</span>`;
 }
 
-/* ---------- rendering ---------- */
-function leadSelect(dot) {
-  const s = leadOf(dot);
-  return `<select class="lead s-${s}" data-lead="${dot}" aria-label="Lead status">${Object.entries(LEAD).map(([k, v]) => `<option value="${k}"${k === s ? " selected" : ""}>${v.label}</option>`).join("")}</select>`;
+function renderStageTabs() {
+  const counts = { all: state.results.length, unsaved: 0 };
+  for (const [k] of STAGES) counts[k] = 0;
+  for (const x of state.results) { const s = stageOf(x.dot); s ? counts[s]++ : counts.unsaved++; }
+  const tabs = [["all", "All"], ["unsaved", "Not in pipeline"], ...STAGES];
+  $("#stagetabs").innerHTML = tabs.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${state.tab === k}">${l} <b>${counts[k]}</b></button>`).join("");
 }
-
-function renderTabs() {
-  const counts = { all: state.results.length };
-  for (const k of Object.keys(LEAD)) counts[k] = 0;
-  for (const x of state.results) counts[leadOf(x.dot)]++;
-  const tabs = [["all", "All"], ...Object.entries(LEAD).map(([k, v]) => [k, v.label])];
-  $("#leadtabs").innerHTML = tabs.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${state.tab === k}">${l} <b>${counts[k]}</b></button>`).join("");
-}
-
-function render() {
+function renderFind() {
   const total = state.results.length;
   $("#count").innerHTML = `${total.toLocaleString()}<small>active ${total === 1 ? "carrier" : "carriers"}</small>`;
   const ex = state.excluded, parts = [];
@@ -745,40 +1160,37 @@ function render() {
   if (ex.revocation) parts.push(`${ex.revocation} revocation pending`);
   if (ex.none) parts.push(`${ex.none} without MC authority`);
   $("#excluded").textContent = parts.length ? `Left out: ${parts.join(", ")}` : "";
-  renderTabs();
+  renderStageTabs();
 
-  const list = visible(), body = $("#rows");
+  const list = visibleResults(), body = $("#rows");
   if (!list.length) {
     const searching = !$("#status").hidden;
     const msg = searching ? `<strong>Searching…</strong>Carriers will appear here in a moment.`
-      : total ? `<strong>No carriers in this view</strong>Clear the filter box or pick another lead status.`
+      : total ? `<strong>No carriers in this view</strong>Clear the filter box or pick another stage.`
       : `<strong>No active carriers match</strong>Try a wider date range, a nearby city, or fewer filters under More filters.`;
     body.innerHTML = `<tr><td colspan="10" class="empty">${msg}</td></tr>`;
     $("#showMore").hidden = true;
     return;
   }
   const page = list.slice(0, state.shown);
-  body.innerHTML = page.map(x => {
-    const r = x.r, eq = equipmentOf(r), s = leadOf(x.dot), note = noteOf(x.dot);
-    const phone = fmtPhone(r.phone), email = (r.email_address || "").toLowerCase();
-    const when = state.lastMode === "date"
-      ? `${esc(fmtDate(x.authDate))}<div class="sub">${esc(x.authEvent)}</div>`
-      : esc(fmtDate(r.add_date));
-    const loc = `${esc(titleCase(r.phy_city))}, ${esc(r.phy_state)}`;
-    const fleet = `${num(r.power_units) ?? 0} ${num(r.power_units) === 1 ? "truck" : "trucks"}`;
-    const drivers = `${num(r.total_drivers) ?? 0} drivers · ${num(r.total_cdl) ? num(r.total_cdl) + " CDL" : "non-CDL"}`;
-    return `<tr data-i="${x.dot}" class="${s === "notint" ? "done" : ""}">
-      <td class="c-lead">${leadSelect(x.dot)}${note ? `<div class="hasnote" title="${esc(note)}">📝 ${esc(note)}</div>` : ""}</td>
-      <td class="c-carrier"><div class="cname">${esc(r.legal_name)}</div>${r.dba_name ? `<div class="sub">DBA ${esc(r.dba_name)}</div>` : ""}<div class="ids">${esc(x.mc)} · DOT ${x.dot}</div></td>
+  body.innerHTML = page.map(({ dot, c }) => {
+    const lead = leadOf(dot), s = lead?.stage || "";
+    const when = state.lastMode === "date" ? `${esc(fmtDate(c.authDate))}<div class="sub">${esc(c.authEvent)}</div>` : esc(fmtDate(c.added));
+    const fleet = `${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}`;
+    const drivers = `${c.drivers} drivers · ${c.cdl ? c.cdl + " CDL" : "non-CDL"}`;
+    const last = lead?.log?.find(e => e.kind === "note" || e.kind === "call");
+    return `<tr data-i="${dot}" class="${s === "lost" ? "done" : ""}">
+      <td class="c-lead">${stageSelect(dot)}${dueBadge(lead) ? `<div>${dueBadge(lead)}</div>` : ""}${last ? `<span class="lastnote" title="${esc(last.text)}">${esc(last.text)}</span>` : ""}</td>
+      <td class="c-carrier"><div class="cname">${esc(c.name)}</div>${c.dba ? `<div class="sub">DBA ${esc(c.dba)}</div>` : ""}<div class="ids">${esc(c.mc)} · DOT ${dot}</div></td>
       <td class="c-status"><span class="pill">● Active</span><div class="sub">MC &amp; USDOT</div></td>
-      <td class="c-person">${x.people.length ? `<div class="person">${esc(x.people[0])}</div>${x.people[1] ? `<div class="sub">${esc(x.people.slice(1).join(", "))}</div>` : ""}` : `<span class="sub">Not listed</span>`}</td>
-      <td class="c-phone">${phone ? `<span class="phone"><a href="${telHref(r.phone)}" data-stop>${esc(phone)}</a><button class="icon" type="button" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`}</td>
-      <td class="email c-email">${email ? `<a href="mailto:${esc(email)}" data-stop>${esc(email)}</a>` : `<span class="sub">–</span>`}</td>
-      <td class="c-loc">${loc}<div class="sub mono">${esc((r.phy_zip || "").slice(0, 5))}</div></td>
+      <td class="c-person">${personCell(c)}</td>
+      <td class="c-phone">${phoneCell(c)}</td>
+      <td class="email c-email">${c.email ? `<a href="mailto:${esc(c.email)}" data-stop>${esc(c.email)}</a>` : `<span class="sub">–</span>`}</td>
+      <td class="c-loc">${esc(c.city)}, ${esc(c.state)}<div class="sub mono">${esc(c.zip.slice(0, 5))}</div></td>
       <td class="num c-fleet">${fleet}<div class="sub">${drivers}</div></td>
       <td class="c-date" style="white-space:nowrap">${when}</td>
-      <td class="c-eq">${eq.slice(0, 3).map(e => `<span class="tag">${esc(e)}</span>`).join("") || `<span class="sub">–</span>`}</td>
-      <td class="c-meta sub">${fleet} · ${drivers}${eq.length ? " · " + esc(eq.slice(0, 2).join(", ")) : ""}</td>
+      <td class="c-eq">${c.equipment.slice(0, 3).map(e => `<span class="tag">${esc(e)}</span>`).join("") || `<span class="sub">–</span>`}</td>
+      <td class="c-meta sub">${fleet} · ${drivers}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 2).join(", ")) : ""}</td>
     </tr>`;
   }).join("");
   const left = list.length - page.length;
@@ -786,112 +1198,269 @@ function render() {
   $("#showMore").textContent = `Show ${Math.min(SHOW_STEP, left)} more (${left} left)`;
 }
 
+/* ===================== Today view ===================== */
+function savedLeads() {
+  return Object.entries(db.leads).map(([dot, l]) => ({ dot: +dot, l, c: carrierFor(+dot) })).filter(x => x.c);
+}
+function todayItem(x, kind) {
+  const { dot, l, c } = x;
+  return `<div class="item" data-open="${dot}">
+    <div class="who"><div class="cname">${esc(c.name)}</div><div class="sub">${c.people[0] ? "Ask for " + esc(c.people[0]) + " · " : ""}${esc(c.city)}, ${esc(c.state)} · ${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}</div>
+      <div><span class="chipstage st-${l.stage}">${STAGE_LABEL[l.stage]}</span> ${dueBadge(l)}</div></div>
+    <div>${phoneCell(c)}${l.log[0] ? `<span class="lastnote" style="max-width:260px">${esc(l.log[0].text)}</span>` : ""}</div>
+    <div class="acts">
+      ${c.phone ? `<a class="btn small" href="${telHref(c.phone)}" data-stop>Call</a>` : ""}
+      <button class="btn small" type="button" data-quick="noanswer" data-dot="${dot}">No answer</button>
+      ${kind !== "new" ? `<button class="btn small" type="button" data-quick="done" data-dot="${dot}">Done</button>` : `<button class="btn small" type="button" data-quick="interested" data-dot="${dot}">Interested</button>`}
+      <button class="btn small" type="button" data-open-btn="${dot}">Open</button>
+    </div>
+  </div>`;
+}
+function renderToday() {
+  const now = new Date(), eod = endOfDay(), week = new Date(eod.getTime() + 7 * 864e5);
+  const all = savedLeads().filter(x => !["lost", "signed"].includes(x.l.stage) || x.l.followUp);
+  const withF = all.filter(x => x.l.followUp).sort((a, b) => a.l.followUp.localeCompare(b.l.followUp));
+  const over = withF.filter(x => new Date(x.l.followUp) < now);
+  const today = withF.filter(x => { const t = new Date(x.l.followUp); return t >= now && t <= eod; });
+  const soon = withF.filter(x => { const t = new Date(x.l.followUp); return t > eod && t <= week; });
+  const fresh = all.filter(x => x.l.stage === "new" && !x.l.followUp).sort((a, b) => b.l.added - a.l.added);
+  $("#todayTiles").innerHTML = [
+    ["over", over.length, "Overdue follow-ups"], ["today", today.length, "Due later today"],
+    ["", soon.length, "Next 7 days"], ["", fresh.length, "New leads not called yet"]
+  ].map(([cls, n, k]) => `<div class="card tile ${cls}"><span class="n">${n}</span><span class="k">${k}</span></div>`).join("");
+  const section = (title, items, kind, emptyText) => `<div class="card list"><h3><span>${title}</span><span>${items.length}</span></h3>${items.length ? items.map(x => todayItem(x, kind)).join("") : `<div class="empty" style="padding:22px">${emptyText}</div>`}</div>`;
+  const nothing = !savedLeads().length;
+  $("#todayLists").innerHTML = nothing
+    ? `<div class="card empty"><strong>Your call list is empty</strong>Go to <a href="#find">Find carriers</a> and use "+ Add to pipeline" on carriers you want to call. They'll show up here.</div>`
+    : section("Overdue", over, "due", "Nothing overdue. Nice.") + section("Due today", today, "due", "No more follow-ups today.") +
+      section("New leads to call", fresh.slice(0, 50), "new", "No uncalled leads. Add more from Find carriers.") + section("Coming up (next 7 days)", soon, "due", "Nothing scheduled this week.");
+}
+
+/* ===================== Pipeline view ===================== */
+function renderPipeline() {
+  const leads = savedLeads().filter(x => matchesQuery(x.c, state.pq, x.dot));
+  $("#board").innerHTML = STAGES.map(([k, label]) => {
+    const items = leads.filter(x => x.l.stage === k).sort((a, b) => b.l.updated - a.l.updated);
+    return `<div class="col" data-col="${k}">
+      <header><b><span class="chipstage st-${k}">${label}</span></b><span class="sub">${items.length}</span></header>
+      <div class="cards">${items.map(({ dot, l, c }) => `<div class="kcard" draggable="true" data-card="${dot}">
+          <div class="cname">${esc(c.name)}</div>
+          <div class="sub">${c.people[0] ? esc(c.people[0]) + " · " : ""}${esc(c.city)}, ${esc(c.state)}</div>
+          <div>${phoneCell(c)}</div>
+          <div class="sub">${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 2).join(", ")) : ""}</div>
+          ${dueBadge(l)}
+        </div>`).join("") || `<div class="sub" style="padding:8px">Drop carriers here</div>`}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ===================== Customers view ===================== */
+function renderCustomers() {
+  const list = savedLeads().filter(x => x.l.stage === "signed").sort((a, b) => (a.c.name).localeCompare(b.c.name));
+  const body = $("#custRows");
+  if (!list.length) { body.innerHTML = `<tr><td colspan="8" class="empty"><strong>No customers yet</strong>When a carrier signs, move it to "Signed" in the pipeline and it shows up here.</td></tr>`; return; }
+  body.innerHTML = list.map(({ dot, l, c }) => {
+    const cu = l.customer || {}, done = ONBOARDING.filter(([k]) => cu.checks?.[k]).length;
+    return `<tr data-open="${dot}" style="cursor:pointer">
+      <td><div class="cname">${esc(c.name)}</div><div class="ids">${esc(c.mc)} · DOT ${dot}</div></td>
+      <td>${personCell(c)}${cu.driver ? `<div class="sub">Driver: ${esc(cu.driver)}</div>` : ""}</td>
+      <td>${phoneCell(c)}</td>
+      <td>${esc(cu.truck || "–")}</td>
+      <td class="num">${cu.percent ? esc(cu.percent) + "%" : "–"}</td>
+      <td>${cu.start ? esc(new Date(cu.start + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })) : "–"}</td>
+      <td><span class="progress"><span class="track"><span class="fill" style="width:${Math.round(done / ONBOARDING.length * 100)}%"></span></span><span class="sub">${done}/${ONBOARDING.length}</span></span></td>
+      <td class="sub">${esc(cu.lanes || "–")}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ===================== Scripts view ===================== */
+function fillTemplate(text, c) {
+  const me = db.me || {};
+  const first = c?.people?.[0]?.split(" ")[0] || "there";
+  const map = {
+    owner: first, ownerFull: c?.people?.[0] || "there", company: c ? titleCase(c.name) : "{company}", mc: c?.mc || "{mc}",
+    city: c?.city || "", state: c?.state || "", trucks: c ? String(c.trucks) : "", equipment: c?.equipment?.[0]?.toLowerCase() || "truck",
+    myName: me.name || "[your name]", myCompany: me.company || "[your company]", myPhone: me.phone || "[your phone]",
+    myEmail: me.email || "[your email]", percent: me.percent || "[your %]"
+  };
+  return text.replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m));
+}
+function renderScripts() {
+  const me = db.me || {};
+  $("#meName").value = me.name || ""; $("#meCompany").value = me.company || ""; $("#mePhone").value = me.phone || "";
+  $("#meEmail").value = me.email || ""; $("#mePercent").value = me.percent || "";
+  $("#templateEditors").innerHTML = Object.keys(DEFAULT_TEMPLATES).map(k => {
+    const t = template(k);
+    return `<div class="card panel">
+      <h3>${esc(t.title)}</h3>
+      ${k !== "script" ? `<label class="field"><span>Subject</span><input data-tpl="${k}" data-part="subject" value="${esc(t.subject)}"></label>` : ""}
+      <label class="field"><span>${k === "script" ? "Script" : "Message"}</span><textarea data-tpl="${k}" data-part="body" rows="${k === "script" ? 18 : 14}">${esc(t.body)}</textarea></label>
+    </div>`;
+  }).join("");
+}
+
+/* ===================== Carrier detail panel ===================== */
 function openDetail(dot) {
-  const x = state.results.find(y => y.dot === dot);
-  if (!x) return;
-  const r = x.r, rating = RATING[r.safety_rating], s = leadOf(dot);
+  const c = carrierFor(dot);
+  if (!c) return;
+  const d = $("#detail");
+  d.dataset.dot = dot;
+  renderDetail();
+  if (!d.open) d.showModal();
+}
+function renderDetail() {
+  const d = $("#detail"), dot = +d.dataset.dot, c = carrierFor(dot);
+  if (!c) return;
+  const lead = leadOf(dot), s = lead?.stage || "", cu = lead?.customer || {};
   const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : "";
-  const phone = fmtPhone(r.phone), cell = fmtPhone(r.cell_phone), email = (r.email_address || "").toLowerCase();
+  const phone = fmtPhone(c.phone), cell = fmtPhone(c.cell);
+  const emails = ["intro", "followup", "onboarding"].map(k => {
+    const t = template(k);
+    const href = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(fillTemplate(t.subject, c))}&body=${encodeURIComponent(fillTemplate(t.body, c))}` : "";
+    return `<div class="buttons">${href ? `<a class="btn small" href="${href}">✉ ${esc(t.title)}</a>` : `<span class="sub">${esc(t.title)}</span>`}<button class="btn small" type="button" data-copy-tpl="${k}">Copy</button></div>`;
+  }).join("");
   $("#sheet").innerHTML = `
     <header>
       <div>
-        <h3>${esc(r.legal_name)}</h3>
-        ${r.dba_name ? `<div class="dba">DBA ${esc(r.dba_name)}</div>` : ""}
-        <div class="idrow"><span class="pill">● MC active</span><span class="pill">● USDOT active</span><span class="ids">${esc(x.mc)} · USDOT ${x.dot}</span></div>
+        <h3>${esc(c.name)}</h3>
+        ${c.dba ? `<div class="dba">DBA ${esc(c.dba)}</div>` : ""}
+        <div class="idrow"><span class="pill">● MC active</span><span class="pill">● USDOT active</span><span class="ids">${esc(c.mc)} · USDOT ${dot}</span></div>
       </div>
       <button class="close" type="button" aria-label="Close" data-close>×</button>
     </header>
 
     <div class="callcard">
-      <div>
-        <div class="sub">Ask for</div>
-        <div class="who">${x.people.length ? esc(x.people.join(" or ")) : "Owner (no name listed)"}</div>
-      </div>
+      <div><div class="sub">Ask for</div><div class="who">${c.people.length ? esc(c.people.join(" or ")) : "The owner (no name listed)"}</div></div>
       <div class="actions">
-        ${phone ? `<a class="btn primary" href="${telHref(r.phone)}">Call ${esc(phone)}</a><button class="btn" type="button" data-copy="${esc(phone)}">Copy number</button>` : `<span class="sub">No phone number on file</span>`}
-        ${cell && cell !== phone ? `<a class="btn" href="${telHref(r.cell_phone)}">Cell ${esc(cell)}</a>` : ""}
-        ${email ? `<a class="btn" href="mailto:${esc(email)}">Email</a><button class="btn" type="button" data-copy="${esc(email)}">Copy email</button>` : ""}
+        ${phone ? `<a class="btn primary" href="${telHref(c.phone)}">Call ${esc(phone)}</a><button class="btn" type="button" data-copy="${esc(phone)}">Copy number</button>` : `<span class="sub">No phone number on file</span>`}
+        ${cell && cell !== phone ? `<a class="btn" href="${telHref(c.cell)}">Cell ${esc(cell)}</a>` : ""}
+        ${c.email ? `<button class="btn" type="button" data-copy="${esc(c.email)}">Copy email</button>` : ""}
       </div>
-      <div class="sub">${email ? esc(email) : "No email on file"}</div>
+      <div class="sub">${c.email ? esc(c.email) : "No email on file"}</div>
     </div>
 
     <section>
-      <h4>Lead status</h4>
-      <div class="leadpick">${Object.entries(LEAD).map(([k, v]) => `<button type="button" data-setlead="${k}" aria-pressed="${k === s}">${v.label}</button>`).join("")}</div>
-      <label class="field"><span>Notes (saved in this browser)</span><textarea id="note" placeholder="e.g. Call back Thursday after 2pm, has 2 reefers">${esc(noteOf(dot))}</textarea></label>
+      <h4>Log this call</h4>
+      <div class="pickrow">${Object.entries(CALL_OUTCOMES).map(([k, o]) => `<button type="button" data-call="${k}">${o.label}</button>`).join("")}</div>
+      <p class="note">Logging a call moves the stage forward and sets the next follow-up for you.</p>
+    </section>
+
+    <section>
+      <h4>Pipeline stage</h4>
+      <div class="pickrow">${STAGES.map(([k, l]) => `<button type="button" data-setstage="${k}" aria-pressed="${k === s}">${l}</button>`).join("")}</div>
+    </section>
+
+    <section>
+      <h4>Follow-up</h4>
+      <div>${lead?.followUp ? dueBadge(lead) : `<span class="sub">No follow-up set</span>`}</div>
+      <div class="pickrow">
+        <button type="button" data-follow="2h">In 2 hours</button>
+        <button type="button" data-follow="tom">Tomorrow 10 AM</button>
+        <button type="button" data-follow="3d">In 3 days</button>
+        <button type="button" data-follow="1w">Next week</button>
+        ${lead?.followUp ? `<button type="button" data-follow="clear">Clear</button>` : ""}
+      </div>
+      <label class="field" style="max-width:260px"><span>Or pick a date and time</span><input type="datetime-local" id="followAt"></label>
+    </section>
+
+    <section>
+      <h4>Notes &amp; activity</h4>
+      <div class="addnote"><input id="noteInput" placeholder="e.g. Has 2 reefers, runs TX to GA, wants $2.50/mile"><button class="btn" type="button" id="addNote">Add</button></div>
+      <div class="log">${(lead?.log || []).map(e => `<div><time>${esc(fmtWhen(e.t))}</time>${esc(e.text)}</div>`).join("") || `<span class="sub">No activity yet.</span>`}</div>
+    </section>
+
+    ${s === "signed" ? `<section>
+      <h4>Customer details</h4>
+      <div class="fields3">
+        <label class="field"><span>Truck</span><select data-cu="truck"><option value="">Choose…</option>${TRUCK_TYPES.map(t => `<option${cu.truck === t ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+        <label class="field"><span>Your %</span><input data-cu="percent" class="mono" inputmode="decimal" value="${esc(cu.percent || db.me?.percent || "")}"></label>
+        <label class="field"><span>Start date</span><input type="date" data-cu="start" value="${esc(cu.start || "")}"></label>
+        <label class="field"><span>Driver name &amp; phone</span><input data-cu="driver" value="${esc(cu.driver || "")}"></label>
+        <label class="field"><span>Target rate / mile</span><input data-cu="rate" value="${esc(cu.rate || "")}" placeholder="$2.40"></label>
+      </div>
+      <label class="field"><span>Preferred lanes</span><input data-cu="lanes" value="${esc(cu.lanes || "")}" placeholder="TX ↔ GA, no NYC"></label>
+      <div class="label">Onboarding checklist</div>
+      <div class="checklist">${ONBOARDING.map(([k, l]) => `<label class="toggle"><input type="checkbox" data-check="${k}"${cu.checks?.[k] ? " checked" : ""}> ${l}</label>`).join("")}</div>
+    </section>` : ""}
+
+    <section>
+      <details class="fold"><summary>Call script</summary><pre class="script">${esc(fillTemplate(template("script").body, c))}</pre></details>
+      <div class="label" style="margin-top:6px">Emails</div>
+      ${emails}
+      <p class="note">Email buttons open your email app with the message filled in. Edit templates under Scripts &amp; emails.</p>
     </section>
 
     <section><h4>Company</h4><dl class="kv">
-      ${row("Address", `${esc(titleCase(r.phy_street))}<br>${esc(titleCase(r.phy_city))}, ${esc(r.phy_state)} ${esc(r.phy_zip)}`)}
-      ${row("Authority type", (x.auth.types || []).map(esc).join("<br>"))}
-      ${row(x.authEvent ? `${esc(x.authEvent)} on` : "", x.authDate && esc(fmtDate(x.authDate)))}
-      ${row("Registered", esc(fmtDate(r.add_date)))}
-      ${row("Operation", esc(titleCase(r.classdef).replaceAll(";", ", ")))}
-    </dl></section>
-
-    <section><h4>Fleet &amp; drivers</h4><dl class="kv">
-      ${row("Power units", String(num(r.power_units) ?? 0))}
-      ${row("Drivers", `${num(r.total_drivers) ?? 0} total · ${num(r.total_cdl) ?? 0} CDL`)}
-      ${row("Hazmat", r.hm_ind === "Y" ? "Yes" : "No")}
-      ${row("Annual miles", num(r.mcs150_mileage) ? `${num(r.mcs150_mileage).toLocaleString()} <span class="sub">(${esc(r.mcs150_mileage_year)})</span>` : "")}
-    </dl></section>
-
-    <section><h4>Equipment &amp; cargo</h4>
-      <div>${equipmentOf(r).map(e => `<span class="tag">${esc(e)}</span>`).join("") || `<span class="sub">No equipment could be inferred</span>`}</div>
-      <div class="sub">${cargoOf(r).map(esc).join(" · ") || "No cargo listed"}</div>
-    </section>
-
-    <section><h4>Safety</h4><dl class="kv">
-      ${row("Safety rating", rating ? `${rating} <span class="sub">(${esc(fmtDate(r.safety_rating_date))})</span>` : "Not rated")}
-      ${row("MCS-150 updated", esc(fmtDate(r.mcs150_date)))}
+      ${row("Address", `${esc(c.street)}<br>${esc(c.city)}, ${esc(c.state)} ${esc(c.zip)}`)}
+      ${row("Authority type", (c.authTypes || []).map(esc).join("<br>"))}
+      ${row(c.authEvent ? `${esc(c.authEvent)} on` : "", c.authDate && esc(fmtDate(c.authDate)))}
+      ${row("Registered", esc(fmtDate(c.added)))}
+      ${row("Operation", esc(titleCase(c.classdef).replaceAll(";", ", ")))}
+      ${row("Fleet", `${c.trucks} power units · ${c.drivers} drivers · ${c.cdl} CDL`)}
+      ${row("Equipment", c.equipment.map(esc).join(", ") || "Couldn't be estimated")}
+      ${row("Cargo", c.cargo.map(esc).join(" · "))}
+      ${row("Hazmat", c.hazmat ? "Yes" : "No")}
+      ${row("Annual miles", c.miles ? `${c.miles.toLocaleString()} <span class="sub">(${esc(c.milesYear)})</span>` : "")}
+      ${row("Safety rating", RATING[c.rating] ? `${RATING[c.rating]} <span class="sub">(${esc(fmtDate(c.ratingDate))})</span>` : "Not rated")}
+      ${row("MCS-150 updated", esc(fmtDate(c.mcs150)))}
     </dl>
       <div class="links">
-        <a href="https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${x.dot}" target="_blank" rel="noopener">SAFER snapshot ↗</a>
-        <a href="https://ai.fmcsa.dot.gov/SMS/Carrier/${x.dot}/CarrierProfile.aspx" target="_blank" rel="noopener">SMS safety profile ↗</a>
+        <a href="https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${dot}" target="_blank" rel="noopener">SAFER snapshot ↗</a>
+        <a href="https://ai.fmcsa.dot.gov/SMS/Carrier/${dot}/CarrierProfile.aspx" target="_blank" rel="noopener">SMS safety profile ↗</a>
       </div>
-    </section>`;
-  const d = $("#detail");
-  d.dataset.dot = dot;
-  if (!d.open) d.showModal();
+    </section>
+
+    ${lead ? `<section><button class="btn danger" type="button" id="removeLead">Remove from pipeline</button></section>` : ""}`;
 }
 
-/* ---------- CSV ---------- */
+/* ===================== export & backup ===================== */
 function csv() {
-  const head = ["Lead status", "Notes", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts", "Phone", "Cell", "Email",
-    "Street", "City", "State", "ZIP", "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo", "Authority event", "Authority date",
-    "Registered", "MCS-150 date", "Safety rating"];
+  const head = ["Pipeline stage", "Follow-up", "Last note", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts",
+    "Phone", "Cell", "Email", "Street", "City", "State", "ZIP", "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo",
+    "Authority event", "Authority date", "Registered", "MCS-150 date", "Safety rating"];
   const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines = visible().map(({ r, dot, mc, people, authEvent, authDate }) => [LEAD[leadOf(dot)].label, noteOf(dot), mc, dot, "Active", "Active", r.legal_name, r.dba_name,
-    people[0] || "", people.slice(1).join("; "), fmtPhone(r.phone), fmtPhone(r.cell_phone), (r.email_address || "").toLowerCase(),
-    r.phy_street, r.phy_city, r.phy_state, r.phy_zip, num(r.power_units) ?? "", num(r.total_drivers) ?? "", num(r.total_cdl) ?? "",
-    equipmentOf(r).join("; "), cargoOf(r).join("; "), authEvent, fmtDate(authDate), fmtDate(r.add_date), fmtDate(r.mcs150_date),
-    RATING[r.safety_rating] || ""].map(q).join(","));
+  const lines = visibleResults().map(({ dot, c }) => {
+    const l = leadOf(dot);
+    return [l ? STAGE_LABEL[l.stage] : "", l?.followUp ? fmtWhen(l.followUp) : "", l?.log?.find(e => e.kind === "note")?.text || "",
+      c.mc, dot, "Active", "Active", c.name, c.dba, c.people[0] || "", c.people.slice(1).join("; "), fmtPhone(c.phone), fmtPhone(c.cell), c.email,
+      c.street, c.city, c.state, c.zip, c.trucks, c.drivers, c.cdl, c.equipment.join("; "), c.cargo.join("; "),
+      c.authEvent, fmtDate(c.authDate), fmtDate(c.added), fmtDate(c.mcs150), RATING[c.rating] || ""].map(q).join(",");
+  });
   return [head.join(","), ...lines].join("\n");
 }
-
-function copyText(text, done) {
-  const fallback = () => {
-    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    let ok = false; try { ok = document.execCommand("copy"); } catch {}
-    ta.remove(); toast(ok ? done : "Copy isn't allowed here. Select the text and copy it yourself.");
-  };
-  try { navigator.clipboard.writeText(text).then(() => toast(done), fallback); } catch { fallback(); }
-}
-
-function downloadCsv() {
-  const url = URL.createObjectURL(new Blob(["﻿" + csv()], { type: "text/csv;charset=utf-8" }));
-  const a = document.createElement("a");
-  a.href = url; a.download = `carriers-${localIso(new Date())}.csv`;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-/* ---------- remembered filters (this browser only) ---------- */
 function saveFilters(f) { try { localStorage.setItem("carrier-scout-filters", JSON.stringify({ ...f, dateFrom: undefined, dateTo: undefined })); } catch {} }
 function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-scout-filters") || "null"); } catch { return null; } }
 
-/* ---------- wiring ---------- */
+/* ===================== navigation ===================== */
+const VIEWS = ["find", "today", "pipeline", "customers", "scripts", "guide"];
+function showView(v) {
+  if (!VIEWS.includes(v)) v = "find";
+  state.view = v;
+  VIEWS.forEach(k => ($("#view-" + k).hidden = k !== v));
+  document.querySelectorAll(".nav a").forEach(a => a.setAttribute("aria-current", a.dataset.view === v ? "page" : "false"));
+  renderAll();
+  window.scrollTo(0, 0);
+}
+function renderCounts() {
+  const leads = savedLeads(), now = new Date(), eod = endOfDay();
+  const due = leads.filter(x => x.l.followUp && new Date(x.l.followUp) <= eod).length;
+  const over = leads.some(x => x.l.followUp && new Date(x.l.followUp) < now);
+  $("#navToday").textContent = due; $("#navToday").classList.toggle("hot", over);
+  $("#navPipe").textContent = leads.filter(x => !["signed", "lost"].includes(x.l.stage)).length;
+  $("#navCust").textContent = leads.filter(x => x.l.stage === "signed").length;
+}
+function renderAll() {
+  renderCounts();
+  if (state.view === "find") renderFind();
+  if (state.view === "today") renderToday();
+  if (state.view === "pipeline") renderPipeline();
+  if (state.view === "customers") renderCustomers();
+  if (state.view === "scripts") renderScripts();
+  if ($("#detail").open) renderDetail();
+}
+
+/* ===================== search form wiring ===================== */
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.mode === mode)));
@@ -921,7 +1490,7 @@ function resetFilters() {
 }
 
 function init() {
-  loadLeads();
+  loadDb();
   $("#state").innerHTML = `<option value="">Any state</option>` + STATES.map(s => `<option>${s}</option>`).join("");
   $("#equipment").innerHTML = Object.entries(EQUIP).map(([k, e]) => `<button type="button" class="chip" data-eq="${k}" aria-pressed="false">${e.label}</button>`).join("");
   $("#cargo").innerHTML = CARGO.map(([k, l]) => `<label><input type="checkbox" value="${k}" id="cargo-${k}"> ${l}</label>`).join("");
@@ -945,9 +1514,7 @@ function init() {
   document.querySelectorAll("[data-driver]").forEach(b => b.addEventListener("click", () => setDriver(b.dataset.driver)));
   document.querySelectorAll("[data-days]").forEach(b => b.addEventListener("click", () => { setDays(+b.dataset.days); run(false); }));
   ["#dateFrom", "#dateTo"].forEach(s => $(s).addEventListener("change", () => document.querySelectorAll("[data-days]").forEach(b => b.setAttribute("aria-pressed", "false"))));
-  $("#moreBtn").addEventListener("click", () => {
-    const open = $("#more").hidden; $("#more").hidden = !open; $("#moreBtn").setAttribute("aria-expanded", String(open));
-  });
+  $("#moreBtn").addEventListener("click", () => { const open = $("#more").hidden; $("#more").hidden = !open; $("#moreBtn").setAttribute("aria-expanded", String(open)); });
   $("#equipment").addEventListener("click", e => {
     const b = e.target.closest("[data-eq]"); if (!b) return;
     const on = b.getAttribute("aria-pressed") !== "true";
@@ -960,54 +1527,130 @@ function init() {
   $("#reset").addEventListener("click", resetFilters);
   $("#search").addEventListener("submit", e => { e.preventDefault(); run(false); });
 
-  let qt; $("#q").addEventListener("input", e => { clearTimeout(qt); qt = setTimeout(() => { state.q = e.target.value.trim(); state.shown = SHOW_STEP; render(); }, 150); });
-  $("#sort").addEventListener("change", render);
-  $("#leadtabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; state.tab = b.dataset.tab; state.shown = SHOW_STEP; render(); });
-  $("#showMore").addEventListener("click", () => { state.shown += SHOW_STEP; render(); });
+  let qt; $("#q").addEventListener("input", e => { clearTimeout(qt); qt = setTimeout(() => { state.q = e.target.value.trim(); state.shown = SHOW_STEP; renderFind(); }, 150); });
+  let pt; $("#pq").addEventListener("input", e => { clearTimeout(pt); pt = setTimeout(() => { state.pq = e.target.value.trim(); renderPipeline(); }, 150); });
+  $("#sort").addEventListener("change", renderFind);
+  $("#stagetabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; state.tab = b.dataset.tab; state.shown = SHOW_STEP; renderFind(); });
+  $("#showMore").addEventListener("click", () => { state.shown += SHOW_STEP; renderFind(); });
   $("#more500").addEventListener("click", () => run(true));
 
+  // Results table
   const rows = $("#rows");
   rows.addEventListener("change", e => {
-    const sel = e.target.closest("[data-lead]"); if (!sel) return;
-    setLead(+sel.dataset.lead, { status: sel.value });
-    toast(`Marked ${LEAD[sel.value].label}`);
-    render();
-  });
-  rows.addEventListener("click", e => {
-    const copy = e.target.closest("[data-copy]");
-    if (copy) { copyText(copy.dataset.copy, "Copied " + copy.dataset.copy); return; }
-    if (e.target.closest("[data-stop], select")) return;
-    const tr = e.target.closest("tr[data-i]"); if (tr) openDetail(+tr.dataset.i);
+    const sel = e.target.closest("[data-stage]"); if (!sel || !sel.value) return;
+    setStage(+sel.dataset.stage, sel.value);
+    toast(`${STAGE_LABEL[sel.value]}: saved to your pipeline`);
+    renderAll();
   });
 
+  // Shared clicks: copy buttons, opening carriers, quick actions
+  document.addEventListener("click", e => {
+    const copy = e.target.closest("[data-copy]");
+    if (copy && !e.target.closest("dialog")) { copyText(copy.dataset.copy, "Copied " + copy.dataset.copy); return; }
+    if (e.target.closest("[data-stop], select, input, textarea, label") && !e.target.closest("[data-open-btn]")) return;
+    const quick = e.target.closest("[data-quick]");
+    if (quick) {
+      const dot = +quick.dataset.dot, k = quick.dataset.quick;
+      if (k === "done") { const l = ensureLead(dot); l.followUp = null; l.log.unshift({ t: Date.now(), kind: "call", text: "Follow-up done" }); saveDb(); toast("Follow-up cleared"); }
+      else { const f = logCall(dot, k); toast(f ? `Logged. Next follow-up ${fmtWhen(f)}` : "Logged"); }
+      renderAll(); return;
+    }
+    const ob = e.target.closest("[data-open-btn]"); if (ob) { openDetail(+ob.dataset.openBtn); return; }
+    const tr = e.target.closest("tr[data-i]"); if (tr) { openDetail(+tr.dataset.i); return; }
+    const op = e.target.closest("[data-open]"); if (op) { openDetail(+op.dataset.open); return; }
+    const card = e.target.closest("[data-card]"); if (card) { openDetail(+card.dataset.card); return; }
+  });
+
+  // Pipeline drag and drop
+  const board = $("#board");
+  board.addEventListener("dragstart", e => { const c = e.target.closest("[data-card]"); if (!c) return; e.dataTransfer.setData("text/plain", c.dataset.card); e.dataTransfer.effectAllowed = "move"; c.classList.add("dragging"); });
+  board.addEventListener("dragend", e => { const c = e.target.closest("[data-card]"); c && c.classList.remove("dragging"); board.querySelectorAll(".col.over").forEach(x => x.classList.remove("over")); });
+  board.addEventListener("dragover", e => { const col = e.target.closest("[data-col]"); if (!col) return; e.preventDefault(); board.querySelectorAll(".col.over").forEach(x => x !== col && x.classList.remove("over")); col.classList.add("over"); });
+  board.addEventListener("drop", e => {
+    const col = e.target.closest("[data-col]"); if (!col) return;
+    e.preventDefault();
+    const dot = +e.dataTransfer.getData("text/plain");
+    if (dot && stageOf(dot) !== col.dataset.col) { setStage(dot, col.dataset.col); toast(`Moved to ${STAGE_LABEL[col.dataset.col]}`); }
+    renderAll();
+  });
+
+  // Detail panel
   const d = $("#detail");
   d.addEventListener("click", e => {
+    const dot = +d.dataset.dot;
     if (e.target === d || e.target.closest("[data-close]")) { d.close(); return; }
-    const c = e.target.closest("[data-copy]"); if (c) copyText(c.dataset.copy, "Copied " + c.dataset.copy);
-    const l = e.target.closest("[data-setlead]");
-    if (l) {
-      setLead(+d.dataset.dot, { status: l.dataset.setlead });
-      d.querySelectorAll("[data-setlead]").forEach(b => b.setAttribute("aria-pressed", String(b === l)));
-      render();
+    const c = e.target.closest("[data-copy]"); if (c) { copyText(c.dataset.copy, "Copied " + c.dataset.copy); return; }
+    const ct = e.target.closest("[data-copy-tpl]");
+    if (ct) { const t = template(ct.dataset.copyTpl), car = carrierFor(dot); copyText(`Subject: ${fillTemplate(t.subject, car)}\n\n${fillTemplate(t.body, car)}`, "Email copied"); return; }
+    const call = e.target.closest("[data-call]");
+    if (call) { const f = logCall(dot, call.dataset.call); toast(f ? `Logged. Next follow-up ${fmtWhen(f)}` : "Logged"); renderAll(); return; }
+    const st = e.target.closest("[data-setstage]");
+    if (st) { setStage(dot, st.dataset.setstage); renderAll(); return; }
+    const fo = e.target.closest("[data-follow]");
+    if (fo) {
+      const k = fo.dataset.follow, now = new Date();
+      const when = k === "2h" ? new Date(now.getTime() + 2 * 36e5) : k === "tom" ? tomorrowAt(10) : k === "3d" ? (() => { const x = tomorrowAt(10); x.setDate(x.getDate() + 2); return x; })() : k === "1w" ? (() => { const x = tomorrowAt(10); x.setDate(x.getDate() + 6); return x; })() : null;
+      setFollowUp(dot, when); toast(when ? `Follow-up set for ${fmtWhen(when)}` : "Follow-up cleared"); renderAll(); return;
+    }
+    if (e.target.id === "addNote") { addNote(dot); return; }
+    if (e.target.id === "removeLead") {
+      if (e.target.dataset.armed) { removeLead(dot); toast("Removed from pipeline"); renderAll(); }
+      else { e.target.dataset.armed = "1"; e.target.textContent = "Click again to remove (notes will be deleted)"; }
     }
   });
-  let nt; d.addEventListener("input", e => {
-    if (e.target.id !== "note") return;
-    clearTimeout(nt); nt = setTimeout(() => { setLead(+d.dataset.dot, { note: e.target.value.trim() }); render(); }, 400);
+  d.addEventListener("keydown", e => { if (e.target.id === "noteInput" && e.key === "Enter") { e.preventDefault(); addNote(+d.dataset.dot); } });
+  d.addEventListener("change", e => {
+    const dot = +d.dataset.dot;
+    if (e.target.id === "followAt" && e.target.value) { setFollowUp(dot, new Date(e.target.value)); toast("Follow-up set"); renderAll(); return; }
+    const cuKey = e.target.dataset.cu, chk = e.target.dataset.check;
+    if (cuKey || chk) {
+      const l = ensureLead(dot); l.customer = l.customer || {};
+      if (cuKey) l.customer[cuKey] = e.target.value.trim();
+      if (chk) { l.customer.checks = l.customer.checks || {}; l.customer.checks[chk] = e.target.checked; }
+      l.updated = Date.now(); saveDb(); renderCounts();
+      if (state.view === "customers") renderCustomers();
+    }
   });
-  d.addEventListener("close", render);
+  d.addEventListener("close", renderAll);
 
-  $("#copyCsv").addEventListener("click", () => {
-    const n = visible().length;
-    if (!n) { toast("Nothing to copy yet. Run a search first."); return; }
-    copyText(csv(), `Copied ${n} carriers as CSV`);
+  // Scripts & settings
+  const meFields = { meName: "name", meCompany: "company", mePhone: "phone", meEmail: "email", mePercent: "percent" };
+  Object.entries(meFields).forEach(([id, key]) => $("#" + id).addEventListener("input", e => { db.me = { ...db.me, [key]: e.target.value.trim() }; saveDb(); }));
+  $("#templateEditors").addEventListener("input", e => {
+    const k = e.target.dataset.tpl, part = e.target.dataset.part; if (!k) return;
+    db.templates[k] = { ...(db.templates[k] || {}), [part]: e.target.value }; saveDb();
   });
-  $("#saveCsv").addEventListener("click", () => {
-    if (!visible().length) { toast("Nothing to download yet. Run a search first."); return; }
-    downloadCsv();
+  $("#resetTemplates").addEventListener("click", e => {
+    if (!e.target.dataset.armed) { e.target.dataset.armed = "1"; e.target.textContent = "Click again to reset all templates"; return; }
+    db.templates = {}; saveDb(); renderScripts(); e.target.textContent = "Reset templates to default"; delete e.target.dataset.armed; toast("Templates reset");
+  });
+  $("#backupBtn").addEventListener("click", () => download(`carrier-scout-backup-${localIso(new Date())}.json`, JSON.stringify({ app: "carrier-scout", version: 1, saved: new Date().toISOString(), ...db }, null, 2), "application/json"));
+  $("#restoreFile").addEventListener("change", async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!data || typeof data.leads !== "object") throw new Error();
+      db = { carriers: data.carriers || {}, leads: data.leads || {}, me: data.me || {}, templates: data.templates || {} };
+      saveDb(); renderAll(); toast(`Restored ${Object.keys(db.leads).length} carriers from backup`);
+    } catch { toast("That file isn't a Carrier Scout backup."); }
+    e.target.value = "";
   });
 
+  // CSV
+  $("#copyCsv").addEventListener("click", () => { const n = visibleResults().length; if (!n) { toast("Nothing to copy yet. Run a search first."); return; } copyText(csv(), `Copied ${n} carriers as CSV`); });
+  $("#saveCsv").addEventListener("click", () => { if (!visibleResults().length) { toast("Nothing to download yet. Run a search first."); return; } download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(), "text/csv;charset=utf-8"); });
+
+  window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
+  showView(location.hash.slice(1) || "find");
+  setInterval(renderCounts, 60000);
+  backfillCarriers();
   run(false);
+}
+function addNote(dot) {
+  const input = $("#noteInput"), text = input.value.trim();
+  if (!text) return;
+  logActivity(dot, "note", text); saveDb(); input.value = ""; renderAll();
+  setTimeout(() => $("#noteInput")?.focus(), 0);
 }
 init();
 </script>

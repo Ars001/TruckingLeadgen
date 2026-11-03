@@ -281,7 +281,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 
     <div class="more" id="more" hidden>
       <div class="group">
-        <div class="label">Equipment <small>(from cargo listed)</small></div>
+        <div class="label">Equipment <small>(estimated from fleet &amp; cargo)</small></div>
         <div class="chips" id="equipment"></div>
       </div>
       <div class="group">
@@ -360,7 +360,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 
   <footer class="src">
     <p>Every carrier shown has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
-    <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers listed on the MCS-150. Equipment is inferred from the cargo a carrier lists. Out-of-service orders and insurance aren't in this data, so check them before you book a load.</p>
+    <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers listed on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo (machinery, construction, oilfield) on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data, so check them before you book a load.</p>
     <p>Lead statuses and notes are saved in this browser only.</p>
   </footer>
 </main>
@@ -383,15 +383,37 @@ const CARGO = [
   ["beverages", "Beverages"], ["paperprod", "Paper products"], ["utility", "Utilities"], ["farmsupp", "Farm supplies"],
   ["construct", "Construction"], ["waterwell", "Water well"], ["cargoothr", "Other"]
 ];
+/* Equipment isn't a census field, so each type is estimated from the fleet a carrier reports (straight trucks, tractors, trailers)
+   and the cargo it lists. `where` is the SoQL version used when searching; `test` tags a record already loaded. */
+const n0 = v => parseInt(v, 10) || 0;
+const hasCargo = (r, keys) => keys.some(k => r["crgo_" + k] === "X");
+const hasStraight = r => n0(r.owntruck) + n0(r.trmtruck) > 0;
+const hasTractor = r => n0(r.owntract) + n0(r.trmtract) > 0;
+const hasTrailer = r => n0(r.owntrail) + n0(r.trmtrail) > 0;
+const Q = {
+  straight: "(owntruck::number > 0 or trmtruck::number > 0)",
+  tractor: "(owntract::number > 0 or trmtract::number > 0)",
+  noTractor: "(coalesce(owntract::number, 0) = 0 and coalesce(trmtract::number, 0) = 0)",
+  trailer: "(owntrail::number > 0 or trmtrail::number > 0)",
+  noTrailer: "(coalesce(owntrail::number, 0) = 0 and coalesce(trmtrail::number, 0) = 0)",
+  cargo: keys => "(" + keys.map(k => `crgo_${k}='X'`).join(" or ") + ")"
+};
+const LOADS = {
+  dryvan: ["genfreight", "paperprod", "beverages", "household", "usmail"],
+  reefer: ["coldfood", "meat", "produce"],
+  flatbed: ["metalsheet", "bldgmat", "logpole", "construct", "machlrg"],
+  stepdeck: ["machlrg", "construct", "oilfield"],
+  heavy: ["machlrg", "oilfield"]
+};
 const EQUIP = {
-  dryvan:   { label: "Dry van",       cargo: ["genfreight", "paperprod", "beverages", "household", "usmail"] },
-  reefer:   { label: "Reefer",        cargo: ["coldfood", "meat", "produce"] },
-  flatbed:  { label: "Flatbed",       cargo: ["metalsheet", "bldgmat", "logpole", "machlrg", "construct", "oilfield"] },
-  tanker:   { label: "Tanker",        cargo: ["liqgas", "chem"] },
-  hopper:   { label: "Hopper / bulk", cargo: ["drybulk", "grainfeed", "coalcoke"] },
-  auto:     { label: "Car hauler",    cargo: ["motoveh", "drivetow"] },
-  box:      { label: "Container",     cargo: ["intermodal"] },
-  stock:    { label: "Livestock",     cargo: ["livestock"] }
+  dryvan:     { label: "Dry van",     where: `${Q.tractor} and ${Q.cargo(LOADS.dryvan)}`, test: r => hasTractor(r) && hasCargo(r, LOADS.dryvan) },
+  reefer:     { label: "Reefer",      where: Q.cargo(LOADS.reefer), test: r => hasCargo(r, LOADS.reefer) },
+  flatbed:    { label: "Flatbed",     where: `${Q.tractor} and ${Q.cargo(LOADS.flatbed)}`, test: r => hasTractor(r) && hasCargo(r, LOADS.flatbed) },
+  stepdeck:   { label: "Step deck",   where: `${Q.tractor} and ${Q.trailer} and ${Q.cargo(LOADS.stepdeck)}`, test: r => hasTractor(r) && hasTrailer(r) && hasCargo(r, LOADS.stepdeck) },
+  doubledrop: { label: "Double drop", where: `${Q.tractor} and ${Q.trailer} and ${Q.cargo(LOADS.heavy)}`, test: r => hasTractor(r) && hasTrailer(r) && hasCargo(r, LOADS.heavy) },
+  boxtruck:   { label: "Box truck",   where: `${Q.straight} and ${Q.noTractor}`, test: r => hasStraight(r) && !hasTractor(r) },
+  poweronly:  { label: "Power only",  where: `${Q.tractor} and ${Q.noTrailer}`, test: r => hasTractor(r) && !hasTrailer(r) },
+  container:  { label: "Container",   where: Q.cargo(["intermodal"]), test: r => hasCargo(r, ["intermodal"]) }
 };
 const LEAD = {
   new:        { label: "To call" },
@@ -404,7 +426,8 @@ const STATES = "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD M
 const CENSUS_FIELDS = ["dot_number", "legal_name", "dba_name", "phy_street", "phy_city", "phy_state", "phy_zip", "phone", "cell_phone",
   "email_address", "company_officer_1", "company_officer_2", "power_units", "truck_units", "total_drivers", "total_cdl", "mcs150_date",
   "add_date", "safety_rating", "safety_rating_date", "hm_ind", "classdef", "docket1prefix", "docket1", "mcs150_mileage",
-  "mcs150_mileage_year", "crgo_cargoothr_desc", ...CARGO.map(([k]) => "crgo_" + k)];
+  "mcs150_mileage_year", "crgo_cargoothr_desc", "owntruck", "owntract", "owntrail", "trmtruck", "trmtract", "trmtrail",
+  ...CARGO.map(([k]) => "crgo_" + k)];
 const PAGE = 500, SHOW_STEP = 100;
 const ICON_COPY = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>`;
 
@@ -504,10 +527,7 @@ function validate(f) {
 
 function censusClauses(f) {
   const w = ["status_code='A'"];
-  if (f.equipment.length) {
-    const fields = [...new Set(f.equipment.flatMap(e => EQUIP[e].cargo))];
-    w.push("(" + fields.map(c => `crgo_${c}='X'`).join(" or ") + ")");
-  }
+  if (f.equipment.length) w.push("(" + f.equipment.map(e => `(${EQUIP[e].where})`).join(" or ") + ")");
   if (f.cargo.length) w.push("(" + f.cargo.map(c => `crgo_${c}='X'`).join(" or ") + ")");
   if (f.driver === "cdl") w.push("total_cdl::number > 0");
   if (f.driver === "noncdl") w.push("(total_cdl is null or total_cdl::number = 0)");
@@ -673,7 +693,7 @@ function finish(f, pageFull = false) {
 }
 
 /* ---------- derived data ---------- */
-function equipmentOf(r) { return Object.values(EQUIP).filter(e => e.cargo.some(c => r["crgo_" + c] === "X")).map(e => e.label); }
+function equipmentOf(r) { return Object.values(EQUIP).filter(e => e.test(r)).map(e => e.label); }
 function contactsOf(r) {
   const names = [r.company_officer_1, r.company_officer_2]
     .flatMap(v => String(v || "").split(/\s{2,}|\s*[,;/&]\s*|\s+AND\s+/i))

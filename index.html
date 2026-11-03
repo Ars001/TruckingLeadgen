@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carrier Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a highway guide-sign band on top, a filter rail on the left, the verified carrier list on the right; the rail stacks above the list on phones. */
+:root {
+  --bg: #eef2ef;
+  --surface: #ffffff;
+  --surface-2: #f6f8f6;
+  --ink: #15211b;
+  --muted: #5b6a62;
+  --line: #d3ddd6;
+  --accent: #0d6a44;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefe4;
+  --ok: #157347;
+  --ok-soft: #dff3e7;
+  --warn: #9a6200;
+  --warn-soft: #fbefd6;
+  --bad: #b3261e;
+  --bad-soft: #fbe3e1;
+  --shadow: 0 1px 2px rgba(16, 40, 28, .06), 0 8px 24px rgba(16, 40, 28, .06);
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1411; --surface: #141e19; --surface-2: #19251f; --ink: #e3ebe6; --muted: #93a39a; --line: #2a3832;
+    --accent: #0f7a4e; --accent-ink: #ffffff; --accent-soft: #173a2a;
+    --ok: #57c98e; --ok-soft: #173a2a; --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1411; --surface: #141e19; --surface-2: #19251f; --ink: #e3ebe6; --muted: #93a39a; --line: #2a3832;
+  --accent: #0f7a4e; --accent-ink: #ffffff; --accent-soft: #173a2a;
+  --ok: #57c98e; --ok-soft: #173a2a; --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1440px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Guide-sign header */
+.band { background: var(--accent); color: var(--accent-ink); }
+.band .wrap { padding-block: 14px; }
+.sign { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; border: 2px solid rgba(255,255,255,.9); border-radius: 10px; padding: 10px 16px; }
+.sign h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: .06em; text-transform: uppercase; line-height: 1; }
+.sign .route { font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; background: #fff; color: #0d6a44; border-radius: 4px; padding: 3px 7px; }
+.sign p { margin: 0; flex: 1 1 280px; font-size: 13px; opacity: .92; min-width: 0; }
+
+.layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; padding-block: 20px 40px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Filter rail */
+.rail { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 900px) { .rail { position: static; max-height: none; } }
+.rail form { display: grid; gap: 18px; padding: 18px; }
+.rail h2 { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.group { display: grid; gap: 8px; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.label small { font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; border-radius: 6px; padding: 7px 6px; cursor: pointer; font-weight: 500; font-size: 13px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fields .full { grid-column: 1 / -1; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field span { font-size: 12px; color: var(--muted); }
+.field input, .field select { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 8px 10px; }
+.field input:focus, .field select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+details.cargo { border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+details.cargo summary { cursor: pointer; padding: 8px 10px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; list-style: none; }
+details.cargo summary::-webkit-details-marker { display: none; }
+details.cargo summary::after { content: "▾"; color: var(--muted); }
+details.cargo[open] summary::after { content: "▴"; }
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; padding: 4px 10px 10px; }
+.checks label, .toggle { display: flex; align-items: center; gap: 7px; font-size: 12.5px; padding: 3px 0; cursor: pointer; min-width: 0; }
+.checks input, .toggle input { accent-color: var(--accent); margin: 0; flex: none; }
+
+.note { font-size: 12px; color: var(--muted); margin: 0; }
+.primary { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 8px; padding: 11px 14px; font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.primary:disabled { opacity: .6; cursor: progress; }
+.ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 7px 12px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.ghost:hover { border-color: var(--accent); }
+
+/* Results */
+.results { display: grid; gap: 12px; min-width: 0; }
+.summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.count { font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: .02em; }
+.count small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+.summary .spacer { flex: 1; }
+.summary .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.summary .actions select { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 7px 8px; font-size: 13px; }
+.excluded { font-size: 12.5px; color: var(--muted); }
+
+.status { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); min-height: 20px; }
+.status .bar { width: 120px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; flex: none; }
+.status .bar i { display: block; height: 100%; width: 40%; background: var(--accent); border-radius: 4px; animation: slide 1.1s ease-in-out infinite; }
+@keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+@media (prefers-reduced-motion: reduce) { .status .bar i { animation: none; width: 100%; opacity: .6; } }
+.error { background: var(--bad-soft); color: var(--bad); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+
+.tablebox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 980px; }
+th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; position: sticky; top: 0; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr { cursor: pointer; }
+tbody tr:hover, tbody tr:focus-visible { background: var(--surface-2); }
+tbody tr:last-child td { border-bottom: 0; }
+td .name { font-weight: 600; }
+td .sub { font-size: 12px; color: var(--muted); }
+td.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+th.num { text-align: right; }
+.mcno { font-family: var(--font-mono); font-weight: 500; white-space: nowrap; }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.tag { display: inline-block; font-size: 11.5px; border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; margin: 0 4px 4px 0; white-space: nowrap; }
+td.email { white-space: nowrap; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+.empty strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+.more { justify-self: center; }
+
+/* Carrier detail */
+dialog { border: 0; padding: 0; margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(520px, 100%); max-width: 100%; background: var(--surface); color: var(--ink); box-shadow: -12px 0 40px rgba(0,0,0,.2); }
+dialog::backdrop { background: rgba(10, 20, 15, .45); }
+.sheet { display: grid; gap: 18px; padding: calc(env(safe-area-inset-top, 0px) + 18px) max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) 20px; }
+.sheet header { display: flex; gap: 12px; align-items: flex-start; }
+.sheet header div { flex: 1; min-width: 0; }
+.sheet h3 { margin: 0; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.05; letter-spacing: .02em; text-wrap: balance; }
+.sheet .dba { color: var(--muted); font-size: 13px; margin-top: 3px; }
+.ids { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+.close { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; line-height: 1; flex: none; }
+.sheet section { display: grid; gap: 8px; }
+.sheet h4 { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 6px 12px; margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.copyrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.copy { border: 1px solid var(--line); background: var(--surface-2); border-radius: 5px; font-size: 11.5px; padding: 2px 7px; cursor: pointer; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.links a { color: var(--accent); font-weight: 500; }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 8px; font-size: 13px; z-index: 50; }
+footer.src { font-size: 12px; color: var(--muted); padding-block: 0 32px; }
+footer.src p { margin: 0 0 4px; max-width: 90ch; }
+</style>
+</head>
+<body>
+
+<div class="band">
+  <div class="wrap">
+    <div class="sign">
+      <span class="route">FMCSA</span>
+      <h1>Carrier Scout</h1>
+      <p>Find active, MC-authorized US carriers by MC range, location, or the day their authority was granted. Live from the FMCSA census and Motus registration data.</p>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="layout">
+    <aside class="rail" aria-label="Search filters">
+      <form id="search" novalidate>
+        <h2>Verification filters</h2>
+
+        <div class="group">
+          <div class="label">Search mode</div>
+          <div class="seg" role="group" aria-label="Search mode">
+            <button type="button" data-mode="date" aria-pressed="true">Authority date</button>
+            <button type="button" data-mode="mc" aria-pressed="false">MC range</button>
+            <button type="button" data-mode="location" aria-pressed="false">Location</button>
+          </div>
+        </div>
+
+        <div class="fields" data-for="date">
+          <label class="field"><span>From</span><input type="date" id="dateFrom"></label>
+          <label class="field"><span>To</span><input type="date" id="dateTo"></label>
+          <label class="field full"><span>Authority event</span>
+            <select id="event">
+              <option value="granted">Newly granted</option>
+              <option value="reinstated">Reinstated</option>
+              <option value="both">Granted or reinstated</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="fields" data-for="mc" hidden>
+          <label class="field"><span>Start MC</span><input id="mcStart" class="mono" inputmode="numeric" placeholder="1600000"></label>
+          <label class="field"><span>End MC</span><input id="mcEnd" class="mono" inputmode="numeric" placeholder="1600500"></label>
+          <p class="note full">Up to 5,000 MC numbers per search.</p>
+        </div>
+
+        <div class="fields" data-for="location" hidden>
+          <label class="field full"><span>City</span><input id="city" placeholder="Dallas" autocomplete="off"></label>
+          <label class="field"><span>State</span><select id="state"></select></label>
+          <label class="field"><span>ZIP starts with</span><input id="zip" class="mono" inputmode="numeric" placeholder="752"></label>
+          <p class="note full">Newest registrations first. Needs a state or ZIP.</p>
+        </div>
+
+        <div class="group">
+          <div class="label">Equipment type <small>inferred from cargo</small></div>
+          <div class="chips" id="equipment"></div>
+        </div>
+
+        <div class="group">
+          <div class="label">Cargo classification</div>
+          <details class="cargo" id="cargoBox">
+            <summary><span id="cargoSummary">All cargo classifications</span></summary>
+            <div class="checks" id="cargo"></div>
+          </details>
+        </div>
+
+        <div class="group">
+          <div class="label">Driver type</div>
+          <div class="seg" role="group" aria-label="Driver type" id="driver">
+            <button type="button" data-driver="both" aria-pressed="true">Both</button>
+            <button type="button" data-driver="cdl" aria-pressed="false">CDL</button>
+            <button type="button" data-driver="noncdl" aria-pressed="false">Non-CDL</button>
+          </div>
+        </div>
+
+        <div class="fields">
+          <label class="field"><span>Minimum trucks</span><input id="minTrucks" class="mono" inputmode="numeric" placeholder="1"></label>
+          <label class="field"><span>Maximum trucks</span><input id="maxTrucks" class="mono" inputmode="numeric" placeholder="Any"></label>
+        </div>
+
+        <div class="group">
+          <div class="label">Contact on file</div>
+          <label class="toggle"><input type="checkbox" id="hasPhone"> Has phone number</label>
+          <label class="toggle"><input type="checkbox" id="hasEmail"> Has email address</label>
+        </div>
+
+        <p class="note">Only active, MC-authorized US carriers come back. Pending authority, inactive authority and revocation-pending carriers are left out.</p>
+        <button class="primary" id="go" type="submit">Verify carriers</button>
+      </form>
+    </aside>
+
+    <section class="results" aria-live="polite">
+      <div class="summary">
+        <div class="count" id="count">0<small>carriers</small></div>
+        <span class="excluded" id="excluded"></span>
+        <span class="spacer"></span>
+        <div class="actions">
+          <label class="field" style="display:flex;align-items:center;gap:6px"><span>Sort</span>
+            <select id="sort">
+              <option value="recent">Newest first</option>
+              <option value="trucks">Most trucks</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </label>
+          <button class="ghost" id="copyCsv" type="button">Copy CSV</button>
+          <button class="ghost" id="saveCsv" type="button">Download CSV</button>
+        </div>
+      </div>
+      <div class="status" id="status" hidden><span class="bar"><i></i></span><span id="statusText"></span></div>
+      <div class="error" id="error" hidden></div>
+      <div class="tablebox">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th><th>MC #</th><th>USDOT</th><th>Carrier</th><th>Location</th><th>Phone</th><th>Email</th>
+              <th class="num">Trucks</th><th class="num">Drivers</th><th id="dateHead">Authority</th><th>Equipment</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <button class="ghost more" id="more" type="button" hidden>Load more</button>
+    </section>
+  </div>
+
+  <footer class="src">
+    <p>Sources: FMCSA Company Census (az4n-8mr2), Motus Authority History (yu5v-wbh6), Motus Carrier (inys-ebih) and L&amp;I Carrier (6eyk-hxee) on data.transportation.gov. They update daily.</p>
+    <p>Equipment is inferred from the cargo a carrier lists on its MCS-150. Out-of-service orders and insurance details aren't in these datasets, so check them before you book a load.</p>
+  </footer>
+</div>
+
+<dialog id="detail" aria-label="Carrier details"><div class="sheet" id="sheet"></div></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const API = "https://data.transportation.gov/resource/";
+const DS = { census: "az4n-8mr2", motusHist: "yu5v-wbh6", motusCarrier: "inys-ebih", legacyCarrier: "6eyk-hxee" };
+
+const CARGO = [
+  ["genfreight", "General freight"], ["household", "Household goods"], ["metalsheet", "Metal: sheets, coils, rolls"],
+  ["motoveh", "Motor vehicles"], ["drivetow", "Drive / tow away"], ["logpole", "Logs, poles, beams, lumber"],
+  ["bldgmat", "Building materials"], ["mobilehome", "Mobile homes"], ["machlrg", "Machinery, large objects"],
+  ["produce", "Fresh produce"], ["liqgas", "Liquids / gases"], ["intermodal", "Intermodal containers"],
+  ["passengers", "Passengers"], ["oilfield", "Oilfield equipment"], ["livestock", "Livestock"],
+  ["grainfeed", "Grain, feed, hay"], ["coalcoke", "Coal / coke"], ["meat", "Meat"], ["garbage", "Garbage, refuse"],
+  ["usmail", "US mail"], ["chem", "Chemicals"], ["drybulk", "Dry bulk commodities"], ["coldfood", "Refrigerated food"],
+  ["beverages", "Beverages"], ["paperprod", "Paper products"], ["utility", "Utilities"], ["farmsupp", "Farm supplies"],
+  ["construct", "Construction"], ["waterwell", "Water well"], ["cargoothr", "Other"]
+];
+const CARGO_LABEL = Object.fromEntries(CARGO);
+const EQUIP = {
+  dryvan:   { label: "Dry van",        cargo: ["genfreight", "paperprod", "beverages", "household", "usmail"] },
+  reefer:   { label: "Reefer",         cargo: ["coldfood", "meat", "produce"] },
+  flatbed:  { label: "Flatbed",        cargo: ["metalsheet", "bldgmat", "logpole", "machlrg", "construct", "oilfield"] },
+  tanker:   { label: "Tanker",         cargo: ["liqgas", "chem"] },
+  hopper:   { label: "Hopper / bulk",  cargo: ["drybulk", "grainfeed", "coalcoke"] },
+  auto:     { label: "Car hauler",     cargo: ["motoveh", "drivetow"] },
+  box:      { label: "Container",      cargo: ["intermodal"] },
+  stock:    { label: "Livestock",      cargo: ["livestock"] }
+};
+const STATES = "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(" ");
+const CENSUS_FIELDS = ["dot_number", "legal_name", "dba_name", "phy_street", "phy_city", "phy_state", "phy_zip", "phone", "cell_phone",
+  "email_address", "company_officer_1", "company_officer_2", "power_units", "truck_units", "total_drivers", "total_cdl", "mcs150_date",
+  "add_date", "safety_rating", "safety_rating_date", "hm_ind", "classdef", "docket1prefix", "docket1", "mcs150_mileage",
+  "mcs150_mileage_year", "crgo_cargoothr_desc", ...CARGO.map(([k]) => "crgo_" + k)];
+const PAGE = 500;
+
+const $ = s => document.querySelector(s);
+const state = { mode: "date", driver: "both", equipment: new Set(), cargo: new Set(), results: [], lastMode: "date", offset: 0, runId: 0, abort: null, lastFilters: null, excluded: {} };
+
+/* ---------- small helpers ---------- */
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = v => { const n = parseInt(String(v ?? "").replace(/[^\d]/g, ""), 10); return Number.isFinite(n) ? n : null; };
+const fmtPhone = p => { const d = String(p || "").replace(/\D/g, ""); return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : (p || ""); };
+const fmtDate = ymd => { if (!ymd || ymd.length < 8) return ""; const d = new Date(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)); return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); };
+const isoToYmd = s => (s || "").replaceAll("-", "");
+const localIso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const RATING = { S: "Satisfactory", C: "Conditional", U: "Unsatisfactory" };
+const titleCase = s => String(s || "").toLowerCase().replace(/\b([a-z])/g, m => m.toUpperCase());
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2200);
+}
+
+async function soql(ds, params, signal) {
+  const res = await fetch(`${API}${ds}.json?${new URLSearchParams(params)}`, { signal });
+  if (!res.ok) {
+    let msg = "";
+    try { msg = (await res.json()).message || ""; } catch {}
+    throw new Error(`The FMCSA data service returned an error (HTTP ${res.status})${msg ? ": " + msg : ""}. Try again, or narrow the search.`);
+  }
+  return res.json();
+}
+
+async function inBatches(items, size, fn, onProgress) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  const out = []; let next = 0, done = 0;
+  async function worker() {
+    while (next < chunks.length) {
+      const chunk = chunks[next++];
+      out.push(...await fn(chunk));
+      done++; onProgress && onProgress(done, chunks.length);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, chunks.length) }, worker));
+  return out;
+}
+
+function setStatus(text) {
+  $("#status").hidden = !text;
+  $("#statusText").textContent = text || "";
+}
+
+/* ---------- reading the form ---------- */
+function readFilters() {
+  const f = {
+    mode: state.mode, driver: state.driver, equipment: [...state.equipment], cargo: [...state.cargo],
+    minTrucks: num($("#minTrucks").value), maxTrucks: num($("#maxTrucks").value),
+    hasPhone: $("#hasPhone").checked, hasEmail: $("#hasEmail").checked,
+    dateFrom: $("#dateFrom").value, dateTo: $("#dateTo").value, event: $("#event").value,
+    mcStart: num($("#mcStart").value), mcEnd: num($("#mcEnd").value),
+    city: $("#city").value.trim(), st: $("#state").value, zip: $("#zip").value.replace(/\D/g, "")
+  };
+  return f;
+}
+
+function validate(f) {
+  if (f.minTrucks != null && f.maxTrucks != null && f.minTrucks > f.maxTrucks) return "Minimum trucks is higher than maximum trucks.";
+  if (f.mode === "date") {
+    if (!f.dateFrom || !f.dateTo) return "Pick a From and To date.";
+    if (f.dateFrom > f.dateTo) return "The From date is after the To date.";
+    const days = (new Date(f.dateTo) - new Date(f.dateFrom)) / 864e5;
+    if (days > 31) return "Pick a date range of 31 days or less.";
+  }
+  if (f.mode === "mc") {
+    if (f.mcStart == null || f.mcEnd == null) return "Enter a Start MC and an End MC.";
+    if (f.mcStart > f.mcEnd) return "Start MC is higher than End MC.";
+    if (f.mcEnd - f.mcStart > 5000) return "Keep the MC range to 5,000 numbers or fewer.";
+  }
+  if (f.mode === "location" && !f.st && f.zip.length < 3) return "Pick a state, or enter at least 3 digits of a ZIP code.";
+  return null;
+}
+
+function censusClauses(f) {
+  const w = ["status_code='A'"];
+  if (f.equipment.length) {
+    const fields = [...new Set(f.equipment.flatMap(e => EQUIP[e].cargo))];
+    w.push("(" + fields.map(c => `crgo_${c}='X'`).join(" or ") + ")");
+  }
+  if (f.cargo.length) w.push("(" + f.cargo.map(c => `crgo_${c}='X'`).join(" or ") + ")");
+  if (f.driver === "cdl") w.push("total_cdl::number > 0");
+  if (f.driver === "noncdl") w.push("(total_cdl is null or total_cdl::number = 0)");
+  if (f.minTrucks != null) w.push(`power_units::number >= ${f.minTrucks}`);
+  if (f.maxTrucks != null) w.push(`power_units::number <= ${f.maxTrucks}`);
+  if (f.hasPhone) w.push("phone is not null");
+  if (f.hasEmail) w.push("email_address is not null");
+  return w;
+}
+
+/* ---------- candidate sources ---------- */
+async function candidatesByDate(f, signal) {
+  const reason = { granted: "reason='Granted'", reinstated: "starts_with(reason,'Reinstated')", both: "(reason='Granted' or starts_with(reason,'Reinstated'))" }[f.event];
+  const rows = await soql(DS.motusHist, {
+    $select: "docket_number,usdot_number,op_auth_type,reason,status_change_date",
+    $where: `status_change_date between '${isoToYmd(f.dateFrom)}' and '${isoToYmd(f.dateTo)}' and ${reason} and op_auth_type like '%Motor Carrier of%'`,
+    $order: "status_change_date DESC", $limit: 50000
+  }, signal);
+  const map = new Map();
+  for (const r of rows) {
+    const dot = num(r.usdot_number);
+    if (!dot || map.has(dot)) continue;
+    map.set(dot, { mc: r.docket_number, authDate: r.status_change_date, authEvent: r.reason.startsWith("Reinstated") ? "Reinstated" : "Granted" });
+  }
+  return map;
+}
+
+async function candidatesByMc(f, signal) {
+  const segs = [];
+  for (let len = String(f.mcStart).length; len <= String(f.mcEnd).length; len++) {
+    const lo = Math.max(f.mcStart, 10 ** (len - 1)), hi = Math.min(f.mcEnd, 10 ** len - 1);
+    if (lo <= hi) segs.push([lo, hi]);
+  }
+  const map = new Map();
+  const inRange = d => { const n = num(d); return n != null && n >= f.mcStart && n <= f.mcEnd && /^MC/.test(d); };
+  await Promise.all(segs.flatMap(([lo, hi]) => {
+    const between = `docket_number between 'MC${lo}' and 'MC${hi}'`;
+    return [
+      soql(DS.motusCarrier, { $select: "docket_number,usdot_number", $where: between, $limit: 50000 }, signal)
+        .then(rows => rows.forEach(r => { const dot = num(r.usdot_number); if (dot && inRange(r.docket_number)) map.set(dot, { mc: r.docket_number }); })),
+      soql(DS.legacyCarrier, { $select: "docket_number,dot_number", $where: between, $limit: 50000 }, signal)
+        .then(rows => rows.forEach(r => { const dot = num(r.dot_number); if (dot && inRange(r.docket_number) && !map.has(dot)) map.set(dot, { mc: r.docket_number }); }))
+    ];
+  }));
+  return map;
+}
+
+async function censusForDots(dots, f, signal, onProgress) {
+  return inBatches(dots, 150, chunk => soql(DS.census, {
+    $select: CENSUS_FIELDS.join(","),
+    $where: [...censusClauses(f), `dot_number in (${chunk.join(",")})`].join(" and "),
+    $limit: 1000
+  }, signal), onProgress);
+}
+
+async function censusByLocation(f, offset, signal) {
+  const w = [...censusClauses(f), "carrier_operation='A'", "classdef like '%AUTHORIZED FOR HIRE%'"];
+  if (f.st) w.push(`phy_state='${f.st}'`);
+  if (f.city) w.push(`upper(phy_city)='${f.city.toUpperCase().replace(/'/g, "''")}'`);
+  if (f.zip) w.push(`starts_with(phy_zip,'${f.zip}')`);
+  return soql(DS.census, { $select: CENSUS_FIELDS.join(","), $where: w.join(" and "), $order: "add_date DESC, dot_number DESC", $limit: PAGE, $offset: offset }, signal);
+}
+
+/* ---------- authority verification ---------- */
+const isCarrierAuth = t => /Motor Carrier of/i.test(t || "");
+
+async function verify(dots, signal) {
+  const quoted = c => c.map(d => `'${d}'`).join(",");
+  const [motus, legacy] = await Promise.all([
+    inBatches(dots, 150, c => soql(DS.motusCarrier, { $select: "docket_number,usdot_number,op_auth_type,op_auth_status", $where: `usdot_number in (${quoted(c)})`, $limit: 5000 }, signal)),
+    inBatches(dots, 150, c => soql(DS.legacyCarrier, {
+      $select: "docket_number,dot_number,common_stat,contract_stat,common_rev_pend,contract_rev_pend,common_app_pend,contract_app_pend",
+      $where: `dot_number in (${quoted(c.map(d => String(d).padStart(8, "0")))})`, $limit: 5000
+    }, signal))
+  ]);
+  const byDot = new Map();
+  for (const r of motus) {
+    if (!isCarrierAuth(r.op_auth_type)) continue;
+    const dot = num(r.usdot_number);
+    (byDot.get(dot) || byDot.set(dot, { motus: [], legacy: [] }).get(dot)).motus.push(r);
+  }
+  for (const r of legacy) {
+    if (!/^M[CX]/.test(r.docket_number || "")) continue;
+    const dot = num(r.dot_number);
+    (byDot.get(dot) || byDot.set(dot, { motus: [], legacy: [] }).get(dot)).legacy.push(r);
+  }
+  const out = new Map();
+  for (const dot of dots) {
+    const rec = byDot.get(dot);
+    if (!rec) { out.set(dot, { state: "none" }); continue; }
+    if (rec.motus.length) {
+      const active = rec.motus.filter(r => r.op_auth_status === "Active");
+      if (active.length) out.set(dot, { state: "active", mc: active[0].docket_number, types: active.map(r => r.op_auth_type), source: "Motus" });
+      else if (rec.motus.some(r => r.op_auth_status === "Pending")) out.set(dot, { state: "pending", mc: rec.motus[0].docket_number });
+      else out.set(dot, { state: "inactive", mc: rec.motus[0].docket_number });
+      continue;
+    }
+    const revoking = rec.legacy.find(r => r.common_rev_pend === "Y" || r.contract_rev_pend === "Y");
+    const active = rec.legacy.find(r => r.common_stat === "A" || r.contract_stat === "A");
+    const pending = rec.legacy.find(r => r.common_app_pend === "Y" || r.contract_app_pend === "Y");
+    if (revoking) out.set(dot, { state: "revocation", mc: revoking.docket_number });
+    else if (active) out.set(dot, { state: "active", mc: active.docket_number, source: "L&I",
+      types: [active.common_stat === "A" && "Common carrier", active.contract_stat === "A" && "Contract carrier"].filter(Boolean) });
+    else if (pending) out.set(dot, { state: "pending", mc: pending.docket_number });
+    else out.set(dot, { state: "inactive", mc: rec.legacy[0].docket_number });
+  }
+  return out;
+}
+
+/* ---------- running a search ---------- */
+async function run(append = false) {
+  const f = append ? state.lastFilters : readFilters();
+  const problem = validate(f);
+  const err = $("#error");
+  if (problem) { err.textContent = problem; err.hidden = false; return; }
+  err.hidden = true;
+  if (state.abort) state.abort.abort();
+  const ctrl = new AbortController(); state.abort = ctrl;
+  const runId = ++state.runId;
+  $("#go").disabled = true; $("#more").hidden = true;
+  if (!append) { state.results = []; state.offset = 0; state.excluded = {}; state.lastFilters = f; state.lastMode = f.mode; saveFilters(f); }
+
+  try {
+    let census = [], cands = new Map(), pageFull = false;
+    if (f.mode === "location") {
+      setStatus("Searching the FMCSA census…");
+      census = await censusByLocation(f, state.offset, ctrl.signal);
+      pageFull = census.length === PAGE;
+      state.offset += census.length;
+    } else {
+      setStatus(f.mode === "date" ? "Finding authority grants in that date range…" : "Finding MC numbers in that range…");
+      cands = f.mode === "date" ? await candidatesByDate(f, ctrl.signal) : await candidatesByMc(f, ctrl.signal);
+      if (runId !== state.runId) return;
+      const dots = [...cands.keys()];
+      if (!dots.length) { finish(f); return; }
+      setStatus(`Pulling census records for ${dots.length.toLocaleString()} carriers…`);
+      census = await censusForDots(dots, f, ctrl.signal, (d, t) => setStatus(`Pulling census records… ${d} of ${t} batches`));
+    }
+    if (runId !== state.runId) return;
+    const dots = census.map(r => num(r.dot_number));
+    setStatus(`Checking authority status for ${dots.length.toLocaleString()} carriers…`);
+    const auth = dots.length ? await verify(dots, ctrl.signal) : new Map();
+    if (runId !== state.runId) return;
+
+    for (const r of census) {
+      const dot = num(r.dot_number), a = auth.get(dot) || { state: "none" }, c = cands.get(dot) || {};
+      if (a.state !== "active") { state.excluded[a.state] = (state.excluded[a.state] || 0) + 1; continue; }
+      state.results.push({
+        dot, r, auth: a,
+        mc: a.mc || c.mc || (r.docket1prefix && r.docket1 ? r.docket1prefix + r.docket1 : ""),
+        authDate: c.authDate || "", authEvent: c.authEvent || ""
+      });
+    }
+    finish(f, pageFull);
+  } catch (e) {
+    if (e.name === "AbortError") return;
+    setStatus(""); err.textContent = e.message || "Something went wrong reaching data.transportation.gov. Check your connection and try again."; err.hidden = false;
+    $("#go").disabled = false;
+  }
+}
+
+function finish(f, pageFull = false) {
+  setStatus(""); $("#go").disabled = false;
+  $("#more").hidden = !pageFull;
+  $("#dateHead").textContent = f.mode === "date" ? "Authority" : "Registered";
+  render();
+}
+
+/* ---------- rendering ---------- */
+function equipmentOf(r) {
+  return Object.values(EQUIP).filter(e => e.cargo.some(c => r["crgo_" + c] === "X")).map(e => e.label);
+}
+function cargoOf(r) {
+  return CARGO.filter(([k]) => r["crgo_" + k] === "X").map(([k, l]) => k === "cargoothr" && r.crgo_cargoothr_desc ? `Other: ${titleCase(r.crgo_cargoothr_desc)}` : l);
+}
+
+function sorted() {
+  const list = [...state.results], by = $("#sort").value;
+  if (by === "trucks") list.sort((a, b) => (num(b.r.power_units) || 0) - (num(a.r.power_units) || 0));
+  else if (by === "name") list.sort((a, b) => (a.r.legal_name || "").localeCompare(b.r.legal_name || ""));
+  else list.sort((a, b) => (b.authDate || b.r.add_date || "").localeCompare(a.authDate || a.r.add_date || "") || b.dot - a.dot);
+  return list;
+}
+
+function render() {
+  const list = sorted();
+  $("#count").innerHTML = `${list.length.toLocaleString()}<small>verified ${list.length === 1 ? "carrier" : "carriers"}</small>`;
+  const ex = state.excluded, parts = [];
+  if (ex.inactive) parts.push(`${ex.inactive} inactive`);
+  if (ex.pending) parts.push(`${ex.pending} pending`);
+  if (ex.revocation) parts.push(`${ex.revocation} revocation pending`);
+  if (ex.none) parts.push(`${ex.none} without MC authority`);
+  $("#excluded").textContent = parts.length ? `Left out: ${parts.join(", ")}` : "";
+
+  const body = $("#rows");
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="11" class="empty"><strong>No verified carriers match</strong>Try a wider date or MC range, a nearby city, or fewer equipment and cargo filters.</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map((x, i) => {
+    const r = x.r, eq = equipmentOf(r);
+    const when = state.lastMode === "date"
+      ? `${esc(fmtDate(x.authDate))}<div class="sub">${esc(x.authEvent)}</div>`
+      : esc(fmtDate(r.add_date));
+    return `<tr tabindex="0" data-i="${x.dot}">
+      <td><span class="pill ok">Active</span></td>
+      <td class="mcno">${esc(x.mc)}</td>
+      <td class="mono">${x.dot}</td>
+      <td><div class="name">${esc(r.legal_name)}</div>${r.dba_name ? `<div class="sub">DBA ${esc(r.dba_name)}</div>` : ""}</td>
+      <td>${esc(titleCase(r.phy_city))}, ${esc(r.phy_state)}<div class="sub mono">${esc((r.phy_zip || "").slice(0, 5))}</div></td>
+      <td class="mono" style="white-space:nowrap">${esc(fmtPhone(r.phone))}</td>
+      <td class="email">${esc((r.email_address || "").toLowerCase())}</td>
+      <td class="num">${num(r.power_units) ?? "–"}</td>
+      <td class="num">${num(r.total_drivers) ?? "–"}<div class="sub">${num(r.total_cdl) ? num(r.total_cdl) + " CDL" : "Non-CDL"}</div></td>
+      <td style="white-space:nowrap">${when}</td>
+      <td>${eq.slice(0, 3).map(e => `<span class="tag">${esc(e)}</span>`).join("") || `<span class="sub">–</span>`}</td>
+    </tr>`;
+  }).join("");
+}
+
+function openDetail(dot) {
+  const x = state.results.find(y => y.dot === dot);
+  if (!x) return;
+  const r = x.r, rating = RATING[r.safety_rating];
+  const copyBtn = (v, label) => v ? `<button class="copy" type="button" data-copy="${esc(v)}">Copy</button>` : "";
+  const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : "";
+  const phone = fmtPhone(r.phone), cell = fmtPhone(r.cell_phone), email = (r.email_address || "").toLowerCase();
+  $("#sheet").innerHTML = `
+    <header>
+      <div>
+        <h3>${esc(r.legal_name)}</h3>
+        ${r.dba_name ? `<div class="dba">DBA ${esc(r.dba_name)}</div>` : ""}
+        <div class="ids"><span class="pill ok">Active authority</span><span class="mcno">${esc(x.mc)}</span><span class="mono">USDOT ${x.dot}</span></div>
+      </div>
+      <button class="close" type="button" aria-label="Close" data-close>×</button>
+    </header>
+    <section><h4>Contact</h4><dl class="kv">
+      ${row("Phone", phone && `<span class="copyrow"><span class="mono">${esc(phone)}</span>${copyBtn(phone)}</span>`)}
+      ${row("Cell", cell && `<span class="copyrow"><span class="mono">${esc(cell)}</span>${copyBtn(cell)}</span>`)}
+      ${row("Email", email && `<span class="copyrow"><span class="email">${esc(email)}</span>${copyBtn(email)}</span>`)}
+      ${row("Officers", [r.company_officer_1, r.company_officer_2].filter(Boolean).map(o => esc(titleCase(o))).join("<br>"))}
+      ${row("Address", `${esc(titleCase(r.phy_street))}<br>${esc(titleCase(r.phy_city))}, ${esc(r.phy_state)} ${esc(r.phy_zip)}`)}
+    </dl></section>
+    <section><h4>Authority</h4><dl class="kv">
+      ${row("Status", `Active <span class="sub">(${esc(x.auth.source)} record)</span>`)}
+      ${row("Authority type", (x.auth.types || []).map(esc).join("<br>"))}
+      ${row(x.authEvent ? `${esc(x.authEvent)} on` : "", x.authDate && esc(fmtDate(x.authDate)))}
+      ${row("Registered with FMCSA", esc(fmtDate(r.add_date)))}
+      ${row("Operation class", esc(titleCase(r.classdef).replaceAll(";", ", ")))}
+    </dl></section>
+    <section><h4>Fleet &amp; drivers</h4><dl class="kv">
+      ${row("Power units", num(r.power_units) ?? "0")}
+      ${row("Trucks", num(r.truck_units) ?? "")}
+      ${row("Drivers", `${num(r.total_drivers) ?? 0} total · ${num(r.total_cdl) ?? 0} CDL`)}
+      ${row("Hazmat", r.hm_ind === "Y" ? "Yes" : "No")}
+      ${row("Annual miles", num(r.mcs150_mileage) ? `${num(r.mcs150_mileage).toLocaleString()} <span class="sub">(${esc(r.mcs150_mileage_year)})</span>` : "")}
+    </dl></section>
+    <section><h4>Equipment &amp; cargo</h4>
+      <div>${equipmentOf(r).map(e => `<span class="tag">${esc(e)}</span>`).join("") || `<span class="sub">No equipment could be inferred</span>`}</div>
+      <div class="sub">${cargoOf(r).map(esc).join(" · ") || "No cargo listed"}</div>
+    </section>
+    <section><h4>Safety</h4><dl class="kv">
+      ${row("Safety rating", rating ? `${rating} <span class="sub">(${esc(fmtDate(r.safety_rating_date))})</span>` : "Not rated")}
+      ${row("MCS-150 updated", esc(fmtDate(r.mcs150_date)))}
+    </dl></section>
+    <section><h4>On FMCSA</h4>
+      <div class="links">
+        <a href="https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${x.dot}" target="_blank" rel="noopener">SAFER snapshot</a>
+        <a href="https://ai.fmcsa.dot.gov/SMS/Carrier/${x.dot}/CarrierProfile.aspx" target="_blank" rel="noopener">SMS safety profile</a>
+      </div>
+      <p class="note">FMCSA's own sites block some networks outside the US.</p>
+    </section>`;
+  const d = $("#detail");
+  if (!d.open) d.showModal();
+}
+
+/* ---------- CSV ---------- */
+function csv() {
+  const head = ["MC", "USDOT", "Legal name", "DBA", "Street", "City", "State", "ZIP", "Phone", "Cell", "Email", "Officer 1", "Officer 2",
+    "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo", "Authority event", "Authority date", "Registered", "MCS-150 date", "Safety rating"];
+  const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const lines = sorted().map(({ r, dot, mc, authEvent, authDate }) => [mc, dot, r.legal_name, r.dba_name, r.phy_street, r.phy_city, r.phy_state, r.phy_zip,
+    fmtPhone(r.phone), fmtPhone(r.cell_phone), (r.email_address || "").toLowerCase(), r.company_officer_1, r.company_officer_2,
+    num(r.power_units) ?? "", num(r.total_drivers) ?? "", num(r.total_cdl) ?? "", equipmentOf(r).join("; "), cargoOf(r).join("; "),
+    authEvent, fmtDate(authDate), fmtDate(r.add_date), fmtDate(r.mcs150_date), RATING[r.safety_rating] || ""].map(q).join(","));
+  return [head.join(","), ...lines].join("\n");
+}
+
+function copyText(text, done) {
+  const fallback = () => {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {}
+    ta.remove(); toast(ok ? done : "Copy isn't allowed here. Select the text and copy it yourself.");
+  };
+  try { navigator.clipboard.writeText(text).then(() => toast(done), fallback); } catch { fallback(); }
+}
+
+function downloadCsv() {
+  const url = URL.createObjectURL(new Blob([csv()], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = `carriers-${localIso(new Date())}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ---------- remembered filters (this browser only) ---------- */
+function saveFilters(f) { try { localStorage.setItem("carrier-scout-filters", JSON.stringify({ ...f, dateFrom: undefined, dateTo: undefined })); } catch {} }
+function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-scout-filters") || "null"); } catch { return null; } }
+
+/* ---------- wiring ---------- */
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+  document.querySelectorAll("[data-for]").forEach(el => (el.hidden = el.dataset.for !== mode));
+}
+function setDriver(d) {
+  state.driver = d;
+  document.querySelectorAll("[data-driver]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.driver === d)));
+}
+function updateCargoSummary() {
+  const n = state.cargo.size;
+  $("#cargoSummary").textContent = n ? `${n} selected` : "All cargo classifications";
+}
+
+function init() {
+  $("#state").innerHTML = `<option value="">Any state</option>` + STATES.map(s => `<option>${s}</option>`).join("");
+  $("#equipment").innerHTML = Object.entries(EQUIP).map(([k, e]) => `<button type="button" class="chip" data-eq="${k}" aria-pressed="false">${e.label}</button>`).join("");
+  $("#cargo").innerHTML = CARGO.map(([k, l]) => `<label><input type="checkbox" value="${k}" id="cargo-${k}"> ${l}</label>`).join("");
+
+  const today = new Date(), yesterday = new Date(Date.now() - 864e5);
+  $("#dateFrom").value = localIso(yesterday); $("#dateTo").value = localIso(today);
+
+  const saved = loadFilters();
+  if (saved) {
+    setMode(saved.mode || "date"); setDriver(saved.driver || "both");
+    (saved.equipment || []).forEach(k => { if (EQUIP[k]) { state.equipment.add(k); document.querySelector(`[data-eq="${k}"]`).setAttribute("aria-pressed", "true"); } });
+    (saved.cargo || []).forEach(k => { const el = document.getElementById("cargo-" + k); if (el) { el.checked = true; state.cargo.add(k); } });
+    $("#minTrucks").value = saved.minTrucks ?? ""; $("#maxTrucks").value = saved.maxTrucks ?? "";
+    $("#hasPhone").checked = !!saved.hasPhone; $("#hasEmail").checked = !!saved.hasEmail;
+    $("#event").value = saved.event || "granted";
+    $("#mcStart").value = saved.mcStart ?? ""; $("#mcEnd").value = saved.mcEnd ?? "";
+    $("#city").value = saved.city || ""; $("#state").value = saved.st || ""; $("#zip").value = saved.zip || "";
+    updateCargoSummary();
+    if (state.mode !== "date" && validate(readFilters())) setMode("date");
+  }
+
+  document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  document.querySelectorAll("[data-driver]").forEach(b => b.addEventListener("click", () => setDriver(b.dataset.driver)));
+  $("#equipment").addEventListener("click", e => {
+    const b = e.target.closest("[data-eq]"); if (!b) return;
+    const on = b.getAttribute("aria-pressed") !== "true";
+    b.setAttribute("aria-pressed", String(on));
+    on ? state.equipment.add(b.dataset.eq) : state.equipment.delete(b.dataset.eq);
+  });
+  $("#cargo").addEventListener("change", e => {
+    e.target.checked ? state.cargo.add(e.target.value) : state.cargo.delete(e.target.value);
+    updateCargoSummary();
+  });
+  $("#search").addEventListener("submit", e => { e.preventDefault(); run(false); });
+  $("#more").addEventListener("click", () => run(true));
+  $("#sort").addEventListener("change", render);
+  $("#rows").addEventListener("click", e => { const tr = e.target.closest("tr[data-i]"); if (tr) openDetail(+tr.dataset.i); });
+  $("#rows").addEventListener("keydown", e => { const tr = e.target.closest("tr[data-i]"); if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openDetail(+tr.dataset.i); } });
+
+  const d = $("#detail");
+  d.addEventListener("click", e => {
+    if (e.target === d || e.target.closest("[data-close]")) d.close();
+    const c = e.target.closest("[data-copy]"); if (c) copyText(c.dataset.copy, "Copied");
+  });
+
+  $("#copyCsv").addEventListener("click", () => {
+    if (!state.results.length) { toast("Nothing to copy yet. Run a search first."); return; }
+    copyText(csv(), `Copied ${state.results.length} carriers as CSV`);
+  });
+  $("#saveCsv").addEventListener("click", () => {
+    if (!state.results.length) { toast("Nothing to download yet. Run a search first."); return; }
+    downloadCsv();
+  });
+
+  run(false);
+}
+init();
+</script>
+</body>
+</html>

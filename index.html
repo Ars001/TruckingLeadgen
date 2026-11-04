@@ -339,6 +339,9 @@ dialog.form .sheet { padding: 20px; }
 .rdy.bad { color: var(--bad); }
 .rdy.wait { color: var(--muted); font-weight: 500; }
 
+.dialpick { display: inline-flex; align-items: center; gap: 6px; }
+.dialpick select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 5px 8px; font-size: 12.5px; }
+
 /* Insurance line */
 .ins { font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
 .ins.ok { color: var(--ok); }
@@ -664,6 +667,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <label class="field"><span>Your phone</span><input id="mePhone" placeholder="+1 (555) 010-2030"></label>
         <label class="field"><span>Your email</span><input id="meEmail" placeholder="ali@swiftlane.com"></label>
         <label class="field"><span>Your dispatch fee %</span><input id="mePercent" class="mono" inputmode="decimal" placeholder="8"></label>
+        <div class="field"><span>How do you make calls?</span><div id="meDialer"></div></div>
       </div>
       <div class="placeholders"><span class="sub">Placeholders you can use:</span><code>{owner}</code><code>{ownerFull}</code><code>{company}</code><code>{mc}</code><code>{city}</code><code>{state}</code><code>{trucks}</code><code>{equipment}</code><code>{myName}</code><code>{myCompany}</code><code>{myPhone}</code><code>{myEmail}</code><code>{percent}</code></div>
     </div>
@@ -975,7 +979,21 @@ const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const num = v => { const n = parseInt(String(v ?? "").replace(/[^\d]/g, ""), 10); return Number.isFinite(n) ? n : null; };
 const digits = p => String(p || "").replace(/\D/g, "");
 const fmtPhone = p => { const d = digits(p); return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : (p || ""); };
-const telHref = p => { const d = digits(p); return d.length === 10 ? `tel:+1${d}` : `tel:${d}`; };
+/* How Call buttons dial: the dispatcher picks their calling app once. Every Call click also copies the number. */
+const DIALERS = {
+  tel:    { label: "Phone / default calling app", href: d => `tel:+1${d}` },
+  gvoice: { label: "Google Voice", href: d => `https://voice.google.com/u/0/calls?a=nc,%2B1${d}`, web: true },
+  teams:  { label: "Microsoft Teams", href: d => `https://teams.microsoft.com/l/call/0/0?users=4:+1${d}`, web: true },
+  skype:  { label: "Skype", href: d => `skype:+1${d}?call` },
+  zoom:   { label: "Zoom Phone", href: d => `zoomphonecall://+1${d}` },
+  copy:   { label: "Just copy the number", href: () => "#" }
+};
+const dialer = () => (DIALERS[db.me?.dialer] ? db.me.dialer : "tel");
+function callAttrs(phone) {
+  const D = DIALERS[dialer()], d = digits(phone).slice(-10);
+  return `href="${esc(D.href(d))}"${D.web ? ' target="_blank" rel="noopener"' : ""} data-callnum="${esc(fmtPhone(phone))}"`;
+}
+const dialerSelect = () => `<label class="sub dialpick">Call with: <select data-dialer aria-label="Calling app">${Object.entries(DIALERS).map(([k, v]) => `<option value="${k}"${k === dialer() ? " selected" : ""}>${v.label}</option>`).join("")}</select></label>`;
 const fmtDate = ymd => { if (!ymd || ymd.length < 8) return ""; const d = new Date(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)); return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); };
 const isoToYmd = s => (s || "").replaceAll("-", "");
 const localIso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -1388,7 +1406,7 @@ function dueBadge(lead) {
 }
 function phoneCell(c) {
   const phone = fmtPhone(c.phone);
-  return phone ? `<span class="phone"><a href="${telHref(c.phone)}" data-stop>${esc(phone)}</a><button class="icon" type="button" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`;
+  return phone ? `<span class="phone"><a ${callAttrs(c.phone)} data-stop>${esc(phone)}</a><button class="icon" type="button" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`;
 }
 function avatar(name, big) {
   const words = titleCase(name).replace(/\b(LLC|Inc|Corp|Co|Ltd|The)\b\.?/g, "").trim().split(/\s+/).filter(w => /^[A-Za-z0-9]/.test(w));
@@ -1483,7 +1501,7 @@ function todayItem(x, kind) {
       <div><span class="chipstage st-${l.stage}">${STAGE_LABEL[l.stage]}</span> ${dueBadge(l)} ${tzBadge(c.state, true)}</div></div></div>
     <div>${phoneCell(c)}${l.log[0] ? `<span class="lastnote" style="max-width:260px">${esc(l.log[0].text)}</span>` : ""}</div>
     <div class="acts">
-      ${c.phone ? `<a class="btn small" href="${telHref(c.phone)}" data-stop>Call</a>` : ""}
+      ${c.phone ? `<a class="btn small" ${callAttrs(c.phone)} data-stop>Call</a>` : ""}
       <button class="btn small" type="button" data-quick="noanswer" data-dot="${dot}">No answer</button>
       ${kind !== "new" ? `<button class="btn small" type="button" data-quick="done" data-dot="${dot}">Done</button>` : `<button class="btn small" type="button" data-quick="interested" data-dot="${dot}">Interested</button>`}
       <button class="btn small" type="button" data-open-btn="${dot}">Open</button>
@@ -1709,7 +1727,8 @@ function renderCallMode() {
       ${last ? `<div class="sub">Last time: ${esc(last.text)} (${esc(fmtWhen(last.t))})</div>` : ""}
     </div>
     <div class="cm-call">
-      <a class="btn primary" href="${telHref(c.phone)}">📞 Call ${esc(fmtPhone(c.phone))}</a>
+      <a class="btn primary" ${callAttrs(c.phone)}>📞 Call ${esc(fmtPhone(c.phone))}</a>
+      ${dialerSelect()}
       <div class="row">
         <a class="btn" href="https://wa.me/1${d10}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
         <a class="btn" href="sms:+1${d10}?&body=${msg}">Text</a>
@@ -1767,7 +1786,7 @@ function renderBrokers() {
   body.innerHTML = list.map(b => `<tr data-broker="${esc(b.id)}" style="cursor:pointer">
     <td><div class="cname">${esc(b.name)}</div>${b.mc ? `<div class="ids">${esc(b.mc)}</div>` : ""}</td>
     <td>${esc(b.contact || "–")}</td>
-    <td>${b.phone ? `<span class="phone"><a href="${telHref(b.phone)}" data-stop>${esc(fmtPhone(b.phone))}</a><button class="icon" type="button" data-copy="${esc(fmtPhone(b.phone))}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : "–"}</td>
+    <td>${b.phone ? `<span class="phone"><a ${callAttrs(b.phone)} data-stop>${esc(fmtPhone(b.phone))}</a><button class="icon" type="button" data-copy="${esc(fmtPhone(b.phone))}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : "–"}</td>
     <td class="email">${b.email ? `<a href="mailto:${esc(b.email)}" data-stop>${esc(b.email)}</a>` : "–"}</td>
     <td class="num">${b.pay ? esc(b.pay) + " days" : "–"}</td>
     <td>${esc(b.credit || "–")}</td>
@@ -1840,6 +1859,7 @@ function renderScripts() {
   const me = db.me || {};
   $("#meName").value = me.name || ""; $("#meCompany").value = me.company || ""; $("#mePhone").value = me.phone || "";
   $("#meEmail").value = me.email || ""; $("#mePercent").value = me.percent || "";
+  $("#meDialer").innerHTML = dialerSelect();
   $("#templateEditors").innerHTML = Object.keys(DEFAULT_TEMPLATES).map(k => {
     const t = template(k);
     return `<div class="card panel">
@@ -1889,12 +1909,13 @@ function renderDetail() {
       ${insPlaceholder(dot)}
       <div data-ready="${dot}" data-agent>${readyHtml(readyCache.get(dot))}</div>
       <div class="actions">
-        ${phone ? `<a class="btn primary" href="${telHref(c.phone)}">📞 Call ${esc(phone)}</a>
+        ${phone ? `<a class="btn primary" ${callAttrs(c.phone)}>📞 Call ${esc(phone)}</a>
           <a class="btn" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>
           <a class="btn" href="${smsHref}">Text</a>
           <button class="btn" type="button" data-copy="${esc(phone)}">Copy number</button>` : `<span class="sub">No phone number on file</span>`}
-        ${cell && cell !== phone ? `<a class="btn" href="${telHref(c.cell)}">Cell ${esc(cell)}</a>` : ""}
+        ${cell && cell !== phone ? `<a class="btn" ${callAttrs(c.cell)}>Cell ${esc(cell)}</a>` : ""}
       </div>
+      ${phone ? dialerSelect() : ""}
       <div class="sub">${c.email ? `${esc(c.email)} <button class="btn small" type="button" data-copy="${esc(c.email)}">Copy email</button>` : "No email on file"}</div>
     </div>
 
@@ -2222,6 +2243,22 @@ function init() {
   // CSV
   $("#copyCsv").addEventListener("click", () => { const n = visibleResults().length; if (!n) { toast("Nothing to copy yet. Run a search first."); return; } copyText(csv(), `Copied ${n} carriers as CSV`); });
   $("#saveCsv").addEventListener("click", () => { if (!visibleResults().length) { toast("Nothing to download yet. Run a search first."); return; } download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(), "text/csv;charset=utf-8"); });
+
+  // Call buttons: copy the number on every click; "Just copy" mode stays on the page
+  document.addEventListener("click", e => {
+    const a = e.target.closest("[data-callnum]"); if (!a) return;
+    const num = a.dataset.callnum;
+    try { navigator.clipboard.writeText(num).catch(() => {}); } catch {}
+    if (dialer() === "copy") { e.preventDefault(); toast(`Copied ${num}. Paste it in your calling app.`); }
+    else toast(`Calling ${num} with ${DIALERS[dialer()].label}. Number copied too.`);
+  }, true);
+  document.addEventListener("change", e => {
+    if (!e.target.matches("[data-dialer]")) return;
+    db.me = { ...db.me, dialer: e.target.value }; saveDb();
+    toast(`Calls will use: ${DIALERS[dialer()].label}`);
+    renderAll();
+    if ($("#callMode").open) renderCallMode();
+  });
 
   // Good time to call only
   $("#callNowBtn").addEventListener("click", e => {

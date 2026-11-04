@@ -5,8 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>Carrier Scout</title>
-<meta name="description" content="Find new MC carriers with owner names and phone numbers, then work them through calls, follow-ups and a pipeline until they sign.">
+<title>Carrier Scout – New MC Carrier Leads with Owner Phone Numbers</title>
+<meta name="description" content="Free tool for truck dispatchers: find newly authorized, active MC carriers from FMCSA data with owner names, phone numbers, insurance and fleet size, then call and follow up in a simple built-in CRM.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Carrier Scout – New MC Carrier Leads for Truck Dispatchers">
+<meta property="og:description" content="Find new, active MC carriers with owner names and phone numbers. Updated daily from FMCSA. Built-in calling mode, follow-ups and pipeline.">
+<meta property="og:url" content="https://ars001.github.io/TruckingLeadgen/">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://ars001.github.io/TruckingLeadgen/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Carrier Scout",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web browser",
+      "description": "Lead finder and calling CRM for truck dispatchers. Finds newly authorized, active MC carriers from FMCSA data with owner names, phone numbers, insurance status and fleet size.",
+      "url": "https://ars001.github.io/TruckingLeadgen/",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Where does the carrier data come from?", "acceptedAnswer": { "@type": "Answer", "text": "From public FMCSA records published on data.transportation.gov: the company census, Motus authority history, carrier authority status, insurance and BOC-3 filings." } },
+        { "@type": "Question", "name": "How up to date is the data?", "acceptedAnswer": { "@type": "Answer", "text": "Authority and status data update daily. Phone, owner and fleet details from the census can lag one to three days for brand-new carriers." } },
+        { "@type": "Question", "name": "Does it only show active carriers?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every carrier shown has active MC authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out." } },
+        { "@type": "Question", "name": "Does it show owner names and phone numbers?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It shows the company officers listed on the carrier's MCS-150, plus the phone number and email on file with FMCSA." } },
+        { "@type": "Question", "name": "Is Carrier Scout affiliated with FMCSA?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is an independent tool that uses FMCSA's public open data and is not affiliated with FMCSA or the U.S. Department of Transportation." } },
+        { "@type": "Question", "name": "Where is my pipeline and notes data saved?", "acceptedAnswer": { "@type": "Answer", "text": "Only in your own browser on your device. Nothing is sent to a Carrier Scout server. Use Download backup to keep a copy." } }
+      ]
+    }
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -92,6 +126,15 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .nav a svg { width: 18px; height: 18px; flex: none; }
 .nav a:hover { color: var(--ink); background: var(--surface-2); }
 .nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.nav a.navhelp { margin-left: auto; }
+.subtabs { display: inline-flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; justify-self: start; }
+.subtabs a { text-decoration: none; font-weight: 600; font-size: 13.5px; color: var(--muted); padding: 7px 14px; border-radius: 8px; }
+.subtabs a[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+details.panelfold > summary { cursor: pointer; list-style: none; font-weight: 700; font-size: 15px; padding: 14px 18px; }
+details.panelfold > summary::-webkit-details-marker { display: none; }
+details.panelfold > summary::after { content: " ▾"; color: var(--muted); }
+details.panelfold[open] > summary::after { content: " ▴"; }
+details.panelfold .numbers { padding-top: 0; }
 .nav .count { background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; font-size: 11px; padding: 0 7px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .nav .count.hot { background: var(--bad); border-color: var(--bad); color: #fff; }
 
@@ -301,12 +344,13 @@ td.c-status { white-space: nowrap; }
 
 /* Bulk select */
 th.c-sel, td.c-sel { width: 34px; padding-right: 0; }
+#results:not(.selecting) .c-sel { display: none; }
 td.c-sel input, th.c-sel input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 2px 0 0; }
 .bulkbar { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 48px); z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; background: var(--ink); color: var(--bg); border-radius: 10px; box-shadow: var(--shadow); }
 .bulkbar b { font-variant-numeric: tabular-nums; }
 .bulkbar .btn { background: transparent; color: var(--bg); border-color: rgba(255,255,255,.35); }
 .bulkbar .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-@media (max-width: 760px) { #results td.c-sel { display: none; } }
+@media (max-width: 760px) { #results.selecting td.c-sel { display: block; grid-column: 1 / -1; } }
 
 /* Numbers */
 .numbers { padding: 16px; display: grid; gap: 14px; }
@@ -432,9 +476,8 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <a href="#today" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Today <span class="count" id="navToday">0</span></a>
     <a href="#pipeline" data-view="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Pipeline <span class="count" id="navPipe">0</span></a>
     <a href="#customers" data-view="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Customers <span class="count" id="navCust">0</span></a>
-    <a href="#brokers" data-view="brokers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>Brokers <span class="count" id="navBrokers">0</span></a>
-    <a href="#scripts" data-view="scripts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Scripts &amp; emails</a>
-    <a href="#guide" data-view="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>Dispatch guide</a>
+    <a href="#scripts" data-view="scripts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Scripts &amp; settings</a>
+    <a href="#guide" data-view="guide" class="navhelp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>Help</a>
   </div>
 </nav>
 
@@ -545,11 +588,11 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <option value="state">State</option>
       </select>
       <button class="btn" id="callNowBtn" type="button" aria-pressed="false">🕗 Good time to call only</button>
-      <button class="btn" id="copyCsv" type="button">Copy CSV</button>
-      <button class="btn" id="saveCsv" type="button">Download CSV</button>
+      <button class="btn" id="hidePipeBtn" type="button" aria-pressed="false">🙈 Hide ones in my pipeline</button>
+      <button class="btn" id="selectBtn" type="button" aria-pressed="false">☑ Select</button>
+      <button class="btn" id="exportCsv" type="button">⬇ Export</button>
       <button class="btn primary" id="startCallsFind" type="button">▶ Start calling</button>
     </div>
-    <div class="pills" id="stagetabs" role="group" aria-label="Pipeline stage"></div>
     <div class="bulkbar" id="bulkbar" hidden>
       <span><b id="selCount">0</b> selected</span>
       <button class="btn primary" type="button" id="bulkAdd">Add to pipeline</button>
@@ -588,9 +631,11 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <label class="sub">Daily target: <input id="targetInput" class="mono" inputmode="numeric" value="50" aria-label="Daily call target"> calls</label>
     </div>
     <div class="tiles" id="todayTiles"></div>
-    <div class="card numbers">
+    <details class="card panelfold">
+    <summary>📊 Your numbers &amp; reminders</summary>
+    <div class="numbers">
       <header>
-        <h3>Your numbers</h3>
+        <span class="sub">Calls, conversations and signed carriers from your call log.</span>
         <button class="btn small" type="button" id="remindBtn">🔔 Turn on follow-up reminders</button>
       </header>
       <div class="stats" id="stats"></div>
@@ -600,11 +645,13 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <div class="barlabels" id="barlabels"></div>
       </div>
     </div>
+    </details>
     <div id="todayLists" class="view"></div>
   </section>
 
   <!-- ============ BROKERS ============ -->
   <section class="view" id="view-brokers" hidden>
+    <nav class="subtabs" aria-label="Customers and brokers"><a href="#customers">Customers</a><a href="#brokers" aria-current="page">Brokers</a></nav>
     <div>
       <h2 class="title">Brokers</h2>
       <p class="lede">Keep the brokers you book with: who to call, how fast they pay, and whether to work with them again.</p>
@@ -641,6 +688,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 
   <!-- ============ CUSTOMERS ============ -->
   <section class="view" id="view-customers" hidden>
+    <nav class="subtabs" aria-label="Customers and brokers"><a href="#customers" aria-current="page">Customers</a><a href="#brokers">Brokers <span class="count" id="navBrokers">0</span></a></nav>
     <div>
       <h2 class="title">Customers</h2>
       <p class="lede">Carriers you've signed. Track their truck, your percentage and onboarding paperwork. Move a carrier to "Signed" to add it here.</p>
@@ -667,9 +715,10 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <label class="field"><span>Your phone</span><input id="mePhone" placeholder="+1 (555) 010-2030"></label>
         <label class="field"><span>Your email</span><input id="meEmail" placeholder="ali@swiftlane.com"></label>
         <label class="field"><span>Your dispatch fee %</span><input id="mePercent" class="mono" inputmode="decimal" placeholder="8"></label>
+        <label class="field"><span>Business address (required in sales emails)</span><input id="meAddress" placeholder="123 Main St, Lahore, Pakistan"></label>
         <div class="field"><span>How do you make calls?</span><div id="meDialer"></div></div>
       </div>
-      <div class="placeholders"><span class="sub">Placeholders you can use:</span><code>{owner}</code><code>{ownerFull}</code><code>{company}</code><code>{mc}</code><code>{city}</code><code>{state}</code><code>{trucks}</code><code>{equipment}</code><code>{myName}</code><code>{myCompany}</code><code>{myPhone}</code><code>{myEmail}</code><code>{percent}</code></div>
+      <div class="placeholders"><span class="sub">Placeholders you can use:</span><code>{owner}</code><code>{ownerFull}</code><code>{company}</code><code>{mc}</code><code>{city}</code><code>{state}</code><code>{trucks}</code><code>{equipment}</code><code>{myName}</code><code>{myCompany}</code><code>{myPhone}</code><code>{myEmail}</code><code>{myAddress}</code><code>{percent}</code></div>
     </div>
     <div class="twocol" id="templateEditors"></div>
     <div class="card panel">
@@ -688,8 +737,31 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <section class="view" id="view-guide" hidden>
     <div class="card guide">
       <div>
-        <h2 class="title">Dispatch guide</h2>
-        <p class="lede">A practical path from your first call to getting paid. Use it to train new dispatchers on your team.</p>
+        <h2 class="title">Help &amp; dispatch guide</h2>
+        <p class="lede">How the app works, common questions, and a practical path from your first call to getting paid.</p>
+      </div>
+
+      <div>
+        <h3>How to use the app in 4 steps</h3>
+        <ol>
+          <li><b>Find carriers:</b> pick "Yesterday + today" and press Find carriers. Hot leads come first.</li>
+          <li><b>Press ▶ Start calling:</b> one carrier at a time with a big Call button.</li>
+          <li><b>After each call, tap what happened:</b> the app saves it and sets the next call for you.</li>
+          <li><b>Every morning, open Today</b> and press ▶ Start calling again for your follow-ups.</li>
+        </ol>
+      </div>
+
+      <div>
+        <h3>Common questions</h3>
+        <div class="objections">
+          <div><b>Where does the carrier data come from?</b>From public FMCSA records published on data.transportation.gov: the company census, Motus authority history, carrier authority status, insurance and BOC-3 filings.</div>
+          <div><b>How up to date is the data?</b>Authority and status data update daily. Phone, owner and fleet details can lag one to three days for brand-new carriers.</div>
+          <div><b>Does it only show active carriers?</b>Yes. Every carrier shown has active MC authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</div>
+          <div><b>Does it show owner names and phone numbers?</b>Yes: the company officers listed on the carrier's MCS-150, plus the phone and email on file with FMCSA.</div>
+          <div><b>The Call button does nothing.</b>On a computer, choose your calling app under "Call with" (Google Voice, Teams, Skype, Zoom Phone, or Just copy the number). Every Call click also copies the number.</div>
+          <div><b>Is Carrier Scout affiliated with FMCSA?</b>No. It's an independent tool that uses FMCSA's public open data.</div>
+          <div><b>Where is my pipeline and notes data saved?</b>Only in your own browser. Use Download backup under Scripts &amp; settings to keep a copy.</div>
+        </div>
       </div>
 
       <div>
@@ -728,7 +800,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <div>
         <h3>Daily routine that works</h3>
         <ul>
-          <li>Start with your <a href="#today">Today</a> list: overdue follow-ups first, then due today.</li>
+          <li>Start with your <a href="#today">Today</a> list: overdue follow-ups first, then due today. Call only between 8 AM and 9 PM in the carrier's local time.</li>
           <li>Block 2 hours for new calls. Aim for 40–60 dials; log every outcome.</li>
           <li>Move carriers through the <a href="#pipeline">Pipeline</a> as soon as something changes.</li>
           <li>End the day by setting follow-ups for everyone you talked to.</li>
@@ -737,7 +809,41 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </div>
   </section>
 
+  <!-- ============ TERMS ============ -->
+  <section class="view" id="view-terms" hidden>
+    <div class="card guide">
+      <div><h2 class="title">Terms of Service</h2><p class="lede">Last updated November 4, 2026. By using Carrier Scout you agree to these terms.</p></div>
+      <div><h3>What the service is</h3><p>Carrier Scout is a tool that searches public data published by the Federal Motor Carrier Safety Administration (FMCSA) on data.transportation.gov and helps you organize your own sales calls. Carrier Scout is <b>not affiliated with, endorsed by, or operated by FMCSA or the U.S. Department of Transportation</b>.</p></div>
+      <div><h3>Data accuracy</h3><p>Data is shown "as is" from public government records and may be out of date, incomplete or wrong. Authority, insurance and safety information can change at any time. Always verify a carrier on the official FMCSA SAFER website before you dispatch, book or pay for a load. We are not responsible for decisions made using this data.</p></div>
+      <div><h3>Your responsibility when you call, text or email</h3>
+        <ul>
+          <li>You are solely responsible for following all laws that apply to your calls, texts and emails, including the U.S. Telephone Consumer Protection Act (TCPA), the Telemarketing Sales Rule, the National Do Not Call Registry, the CAN-SPAM Act and state laws.</li>
+          <li>Do not use auto-dialers, prerecorded or artificial voice messages, or bulk text messages to reach carriers without their prior express consent.</li>
+          <li>Call only between 8 AM and 9 PM in the carrier's local time.</li>
+          <li>If someone asks you not to contact them again, stop and mark them "Not interested".</li>
+          <li>Commercial emails must include your physical business address and a clear way to opt out.</li>
+        </ul></div>
+      <div><h3>Acceptable use</h3><p>Do not use Carrier Scout to harass anyone, send spam, commit fraud, impersonate a carrier or broker, or resell the data as a list. Do not try to break, overload or copy the service.</p></div>
+      <div><h3>Your data</h3><p>Your pipeline, notes, follow-ups, brokers and templates are stored only in your own browser. You are responsible for keeping backups. See the <a href="#privacy">Privacy Policy</a>.</p></div>
+      <div><h3>No warranty and limit of liability</h3><p>The service is provided "as is" without warranties of any kind. To the maximum extent allowed by law, we are not liable for any lost profits, lost data, fines, claims or damages arising from your use of the service.</p></div>
+      <div><h3>Changes</h3><p>We may change the service or these terms at any time. Continued use means you accept the updated terms.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ PRIVACY ============ -->
+  <section class="view" id="view-privacy" hidden>
+    <div class="card guide">
+      <div><h2 class="title">Privacy Policy</h2><p class="lede">Last updated November 4, 2026.</p></div>
+      <div><h3>What we collect</h3><p>Nothing about you is sent to us. Carrier Scout has no accounts and no server of its own. Your pipeline, notes, follow-ups, brokers, templates and settings are saved only in your browser's local storage on your device.</p></div>
+      <div><h3>Where data comes from</h3><p>When you search, your browser requests public carrier records directly from data.transportation.gov (U.S. Department of Transportation). Their privacy policy applies to those requests. Fonts are loaded from Google Fonts.</p></div>
+      <div><h3>Calls, texts and emails</h3><p>Call, WhatsApp, text and email buttons open the app you choose (for example your phone, Google Voice or your email program). Those apps have their own privacy policies.</p></div>
+      <div><h3>Deleting your data</h3><p>Clear your browser's site data for this page, or remove carriers from your pipeline, to delete what is stored. Backup files you download are yours to keep safe.</p></div>
+      <div><h3>Carrier information</h3><p>Carrier details shown come from public FMCSA records that carriers file with the government. If you are a carrier and want your details updated, update your MCS-150 with FMCSA.</p></div>
+    </div>
+  </section>
+
   <footer class="src">
+    <p><b>Carrier Scout is not affiliated with FMCSA or the U.S. Department of Transportation.</b> <a href="#terms">Terms of Service</a> · <a href="#privacy">Privacy Policy</a> · <a href="#guide">Help</a></p>
     <p>Every carrier in search results has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
     <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data.</p>
     <p>Local times use each state's main time zone; a few states span two zones.</p>
@@ -860,7 +966,7 @@ Would you like to try one load with us this week?
   },
   text: {
     title: "Text / WhatsApp message", subject: "",
-    body: `Hi {owner}, this is {myName} with {myCompany}. Congrats on the new authority for {company}. I help new carriers find good-paying loads and handle the broker paperwork for {percent}% of the gross, no load no fee. Do you have 5 minutes for a quick call? {myPhone}`
+    body: `Hi {owner}, this is {myName} with {myCompany}. Congrats on the new authority for {company}. I help new carriers find good-paying loads and handle the broker paperwork for {percent}% of the gross, no load no fee. Do you have 5 minutes for a quick call? {myPhone}. Reply STOP and I won't message again.`
   },
   intro: {
     title: "Intro email (after no answer)", subject: "Dispatch help for {company}",
@@ -880,7 +986,10 @@ Do you have 5 minutes for a quick call this week? You can reach me at {myPhone}.
 Thanks,
 {myName}
 {myCompany}
-{myPhone}`
+{myPhone}
+{myAddress}
+
+Not interested? Just reply "no thanks" and I won't email you again.`
   },
   followup: {
     title: "Follow-up after a call", subject: "Great talking today, {owner}",
@@ -896,7 +1005,10 @@ If you'd like to try a load this week, just reply to this email or call me at {m
 
 Thanks,
 {myName}
-{myCompany}`
+{myCompany}
+{myAddress}
+
+Not interested? Just reply "no thanks" and I won't email you again.`
   },
   onboarding: {
     title: "Onboarding documents request", subject: "Next steps to start dispatching {company}",
@@ -1169,7 +1281,7 @@ function logCall(dot, key) {
 const state = {
   mode: "date", driver: "both", equipment: new Set(), cargo: new Set(),
   results: [], lastMode: "date", offset: 0, runId: 0, abort: null, lastFilters: null, excluded: {},
-  tab: "all", q: "", shown: SHOW_STEP, view: "find", pq: "", bq: "", selected: new Set(), pageDots: [], callNow: false
+  q: "", shown: SHOW_STEP, view: "find", pq: "", bq: "", selected: new Set(), pageDots: [], callNow: false, hidePipe: false, selecting: false
 };
 
 function setStatus(text) { $("#status").hidden = !text; $("#statusText").textContent = text || ""; }
@@ -1386,9 +1498,7 @@ function sortedResults() {
 function visibleResults() {
   return sortedResults().filter(x => {
     if (state.callNow && localTime(x.c.state)?.fit !== "good") return false;
-    const s = stageOf(x.dot);
-    if (state.tab === "unsaved" && s) return false;
-    if (state.tab !== "all" && state.tab !== "unsaved" && s !== state.tab) return false;
+    if (state.hidePipe && stageOf(x.dot)) return false;
     return matchesQuery(x.c, state.q, x.dot);
   });
 }
@@ -1418,13 +1528,6 @@ function personCell(c) {
   return c.people.length ? `<div class="person">${esc(c.people[0])}</div>${c.people[1] ? `<div class="sub">${esc(c.people.slice(1).join(", "))}</div>` : ""}` : `<span class="sub">Not listed</span>`;
 }
 
-function renderStageTabs() {
-  const counts = { all: state.results.length, unsaved: 0 };
-  for (const [k] of STAGES) counts[k] = 0;
-  for (const x of state.results) { const s = stageOf(x.dot); s ? counts[s]++ : counts.unsaved++; }
-  const tabs = [["all", "All"], ["unsaved", "Not in pipeline"], ...STAGES];
-  $("#stagetabs").innerHTML = tabs.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${state.tab === k}">${l} <b>${counts[k]}</b></button>`).join("");
-}
 function renderFind() {
   const total = state.results.length;
   $("#count").innerHTML = `${total.toLocaleString()}<small>active ${total === 1 ? "carrier" : "carriers"}</small>`;
@@ -1434,14 +1537,15 @@ function renderFind() {
   if (ex.revocation) parts.push(`${ex.revocation} revocation pending`);
   if (ex.none) parts.push(`${ex.none} without MC authority`);
   const hot = state.results.filter(x => leadScore(x.c).level === "hot").length;
-  $("#excluded").textContent = [hot ? `🔥 ${hot} hot leads` : "", parts.length ? `Left out: ${parts.join(", ")}` : ""].filter(Boolean).join("  ·  ");
-  renderStageTabs();
+  const inPipe = state.results.filter(x => stageOf(x.dot)).length;
+  $("#excluded").textContent = [hot ? `🔥 ${hot} hot leads` : "", inPipe ? `${inPipe} already in your pipeline` : "", parts.length ? `Left out: ${parts.join(", ")}` : ""].filter(Boolean).join("  ·  ");
+  $("#results").classList.toggle("selecting", state.selecting);
 
   const list = visibleResults(), body = $("#rows");
   if (!list.length) {
     const searching = !$("#status").hidden;
     const msg = searching ? `<strong>Searching…</strong>Carriers will appear here in a moment.`
-      : total ? `<strong>No carriers in this view</strong>Clear the filter box or pick another stage.`
+      : total ? `<strong>No carriers in this view</strong>Clear the filter box or turn off the buttons above.`
       : `<strong>No active carriers match</strong>Try a wider date range, a nearby city, or fewer filters under More filters.`;
     body.innerHTML = `<tr><td colspan="11" class="empty">${msg}</td></tr>`;
     $("#showMore").hidden = true;
@@ -1851,14 +1955,14 @@ function fillTemplate(text, c) {
     owner: first, ownerFull: c?.people?.[0] || "there", company: c ? titleCase(c.name) : "{company}", mc: c?.mc || "{mc}",
     city: c?.city || "", state: c?.state || "", trucks: c ? String(c.trucks) : "", equipment: c?.equipment?.[0]?.toLowerCase() || "truck",
     myName: me.name || "[your name]", myCompany: me.company || "[your company]", myPhone: me.phone || "[your phone]",
-    myEmail: me.email || "[your email]", percent: me.percent || "[your %]"
+    myEmail: me.email || "[your email]", percent: me.percent || "[your %]", myAddress: me.address || "[your business address]"
   };
   return text.replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m));
 }
 function renderScripts() {
   const me = db.me || {};
   $("#meName").value = me.name || ""; $("#meCompany").value = me.company || ""; $("#mePhone").value = me.phone || "";
-  $("#meEmail").value = me.email || ""; $("#mePercent").value = me.percent || "";
+  $("#meEmail").value = me.email || ""; $("#mePercent").value = me.percent || ""; $("#meAddress").value = me.address || "";
   $("#meDialer").innerHTML = dialerSelect();
   $("#templateEditors").innerHTML = Object.keys(DEFAULT_TEMPLATES).map(k => {
     const t = template(k);
@@ -2011,12 +2115,14 @@ function saveFilters(f) { try { localStorage.setItem("carrier-scout-filters", JS
 function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-scout-filters") || "null"); } catch { return null; } }
 
 /* ===================== navigation ===================== */
-const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide"];
+const BASE_TITLE = document.title;
+const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy"];
 function showView(v) {
   if (!VIEWS.includes(v)) v = "find";
   state.view = v;
   VIEWS.forEach(k => ($("#view-" + k).hidden = k !== v));
-  document.querySelectorAll(".nav a").forEach(a => a.setAttribute("aria-current", a.dataset.view === v ? "page" : "false"));
+  const navKey = v === "brokers" ? "customers" : v;
+  document.querySelectorAll(".nav a").forEach(a => a.setAttribute("aria-current", a.dataset.view === navKey ? "page" : "false"));
   renderAll();
   window.scrollTo(0, 0);
 }
@@ -2028,7 +2134,7 @@ function renderCounts() {
   $("#navPipe").textContent = leads.filter(x => !["signed", "lost"].includes(x.l.stage)).length;
   $("#navCust").textContent = leads.filter(x => x.l.stage === "signed").length;
   $("#navBrokers").textContent = Object.keys(db.brokers).length;
-  document.title = due ? `(${due}) Carrier Scout` : "Carrier Scout";
+  document.title = due ? `(${due}) ${BASE_TITLE}` : BASE_TITLE;
 }
 function renderAll() {
   renderCounts();
@@ -2111,7 +2217,15 @@ function init() {
   let qt; $("#q").addEventListener("input", e => { clearTimeout(qt); qt = setTimeout(() => { state.q = e.target.value.trim(); state.shown = SHOW_STEP; renderFind(); }, 150); });
   let pt; $("#pq").addEventListener("input", e => { clearTimeout(pt); pt = setTimeout(() => { state.pq = e.target.value.trim(); renderPipeline(); }, 150); });
   $("#sort").addEventListener("change", renderFind);
-  $("#stagetabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; state.tab = b.dataset.tab; state.shown = SHOW_STEP; renderFind(); });
+  $("#hidePipeBtn").addEventListener("click", e => {
+    state.hidePipe = !state.hidePipe; state.shown = SHOW_STEP;
+    e.currentTarget.setAttribute("aria-pressed", String(state.hidePipe)); renderFind();
+  });
+  $("#selectBtn").addEventListener("click", e => {
+    state.selecting = !state.selecting;
+    if (!state.selecting) state.selected.clear();
+    e.currentTarget.setAttribute("aria-pressed", String(state.selecting)); renderFind();
+  });
   $("#showMore").addEventListener("click", () => { state.shown += SHOW_STEP; renderFind(); });
   $("#more500").addEventListener("click", () => run(true));
 
@@ -2218,7 +2332,7 @@ function init() {
   d.addEventListener("close", renderAll);
 
   // Scripts & settings
-  const meFields = { meName: "name", meCompany: "company", mePhone: "phone", meEmail: "email", mePercent: "percent" };
+  const meFields = { meName: "name", meCompany: "company", mePhone: "phone", meEmail: "email", mePercent: "percent", meAddress: "address" };
   Object.entries(meFields).forEach(([id, key]) => $("#" + id).addEventListener("input", e => { db.me = { ...db.me, [key]: e.target.value.trim() }; saveDb(); }));
   $("#templateEditors").addEventListener("input", e => {
     const k = e.target.dataset.tpl, part = e.target.dataset.part; if (!k) return;
@@ -2241,8 +2355,12 @@ function init() {
   });
 
   // CSV
-  $("#copyCsv").addEventListener("click", () => { const n = visibleResults().length; if (!n) { toast("Nothing to copy yet. Run a search first."); return; } copyText(csv(), `Copied ${n} carriers as CSV`); });
-  $("#saveCsv").addEventListener("click", () => { if (!visibleResults().length) { toast("Nothing to download yet. Run a search first."); return; } download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(), "text/csv;charset=utf-8"); });
+  $("#exportCsv").addEventListener("click", () => {
+    const n = visibleResults().length;
+    if (!n) { toast("Nothing to export yet. Run a search first."); return; }
+    download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(), "text/csv;charset=utf-8");
+    toast(`Exported ${n} carriers (opens in Excel)`);
+  });
 
   // Call buttons: copy the number on every click; "Just copy" mode stays on the page
   document.addEventListener("click", e => {

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
+<script>try { document.documentElement.dataset.theme = localStorage.getItem("cs-theme") || "dark"; } catch { document.documentElement.dataset.theme = "dark"; }</script>
 <title>Carrier Scout – New MC Carrier Leads with Owner Phone Numbers</title>
 <meta name="description" content="Free tool for truck dispatchers: find newly authorized, active MC carriers from FMCSA data with owner names, phone numbers, insurance and fleet size, then call and follow up in a simple built-in CRM.">
 <meta name="robots" content="index, follow">
@@ -58,6 +59,7 @@
   --accent-soft: #e0f3e9;
   --hero: #06281c;
   --hero-ink: #eaf7f0;
+  --glow: rgba(25, 180, 111, .16);
   --av-bg: 92%; --av-fg: 28%;
   --ok: #157347;  --ok-soft: #dff3e7;
   --info: #1d5fa8; --info-soft: #e1ecf9;
@@ -72,8 +74,9 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b120f; --surface: #121b17; --surface-2: #17221d; --ink: #e3ebe6; --muted: #93a39a; --line: #24312b;
-    --accent: #0f8a58; --accent-ink: #ffffff; --accent-soft: #163a29; --hero: #04170f; --hero-ink: #e3f3ea; --av-bg: 24%; --av-fg: 82%;
+    --bg: #0c0e0d; --surface: #141716; --surface-2: #1a1e1c; --ink: #edf0ee; --muted: #9ba49f; --line: #262b29;
+    --accent: #22c27e; --accent-ink: #04140c; --accent-soft: #12301f; --hero: #0c0e0d; --hero-ink: #edf0ee; --av-bg: 22%; --av-fg: 82%;
+    --glow: rgba(34, 194, 126, .22);
     --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
     --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
     --hot: #ffa36b; --hot-soft: #3d2416;
@@ -82,8 +85,9 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0b120f; --surface: #121b17; --surface-2: #17221d; --ink: #e3ebe6; --muted: #93a39a; --line: #24312b;
-  --accent: #0f8a58; --accent-ink: #ffffff; --accent-soft: #163a29; --hero: #04170f; --hero-ink: #e3f3ea; --av-bg: 24%; --av-fg: 82%;
+  --bg: #0c0e0d; --surface: #141716; --surface-2: #1a1e1c; --ink: #edf0ee; --muted: #9ba49f; --line: #262b29;
+  --accent: #22c27e; --accent-ink: #04140c; --accent-soft: #12301f; --hero: #0c0e0d; --hero-ink: #edf0ee; --av-bg: 22%; --av-fg: 82%;
+  --glow: rgba(34, 194, 126, .22);
   --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
   --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
   --hot: #ffa36b; --hot-soft: #3d2416;
@@ -105,8 +109,23 @@ h2.title { margin: 0; font-family: var(--font-display); font-size: clamp(24px, 3
 .wrap { max-width: 1400px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
 /* Header: deep green with a dashed lane line along the bottom edge */
-.band { position: relative; background: radial-gradient(1200px 300px at 85% -40%, rgba(46, 190, 120, .28), transparent 60%), var(--hero); color: var(--hero-ink); }
-.band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: repeating-linear-gradient(90deg, #f2c94c 0 28px, transparent 28px 52px); opacity: .85; }
+.band { position: relative; background: radial-gradient(900px 260px at 20% -60%, var(--glow), transparent 70%), var(--hero); color: var(--hero-ink); }
+.band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: repeating-linear-gradient(90deg, #f2c94c 0 28px, transparent 28px 52px); opacity: .55; }
+.bandright { display: flex; align-items: center; gap: 10px; }
+.themebtn { width: 38px; height: 38px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; cursor: pointer; font-size: 16px; display: grid; place-items: center; }
+:root[data-theme="light"] .themebtn { border-color: rgba(255,255,255,.3); }
+/* Soft glow behind each page's headline */
+.view > div:first-child:has(> h2.title), .view > .pagehead { position: relative; }
+.view > div:first-child:has(> h2.title)::before { content: ""; position: absolute; left: -40px; top: -60px; width: 520px; max-width: 90vw; height: 200px; background: radial-gradient(closest-side, var(--glow), transparent); pointer-events: none; z-index: -1; }
+#view-find h2.title { font-size: clamp(28px, 4.2vw, 42px); letter-spacing: -.03em; }
+/* US clocks */
+.clocks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.clock { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.clock i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.clock.good i { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.clock.edge i { background: var(--warn); }
+.clock.bad i { background: var(--bad); }
+.clock span { color: var(--muted); font-weight: 500; }
 .bandrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding-block: 14px 17px; }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; min-width: 0; }
 .logo { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(140deg, #19b46f, #0a7d4f); box-shadow: 0 6px 18px -6px rgba(25, 180, 111, .7); flex: none; }
@@ -140,7 +159,7 @@ details.panelfold .numbers { padding-top: 0; }
 
 main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .view { display: grid; gap: 16px; min-width: 0; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
 .tablebox.card { border-radius: 16px; }
 /* Carrier avatar: initials on a soft colour picked from the name */
 .who2 { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
@@ -166,10 +185,10 @@ main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 14px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: border-color .15s, background .15s, transform .1s; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 9px 16px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: border-color .15s, background .15s, transform .1s; }
 .btn:hover { border-color: var(--accent); }
 .btn:active { transform: translateY(1px); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; padding-inline: 18px; box-shadow: 0 6px 16px -8px rgba(10, 125, 79, .8); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; padding-inline: 20px; box-shadow: 0 8px 24px -10px var(--accent); }
 .btn.primary:hover { filter: brightness(1.07); }
 .btn.primary:disabled { opacity: .6; cursor: progress; }
 .btn.small { padding: 5px 10px; font-size: 12.5px; border-radius: 999px; }
@@ -466,7 +485,10 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5h11v9H2z"/><path d="M13 9.5h4.2l3.3 3.3v2.7H13z"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span>
       <span><b>Carrier Scout</b><small>Find carriers. Call. Sign them.</small></span>
     </a>
-    <span class="live"><i></i> Live FMCSA data · updated daily</span>
+    <div class="bandright">
+      <span class="live"><i></i> Live FMCSA data · updated daily</span>
+      <button class="themebtn" type="button" id="themeBtn" aria-label="Switch light or dark theme">☀</button>
+    </div>
   </div>
 </header>
 
@@ -489,6 +511,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <h2 class="title">Find carriers to call</h2>
       <p class="lede">New MC authorities with owner names and phone numbers. Every carrier here is checked as active.</p>
     </div>
+    <div class="clocks" aria-label="Time in the US now"></div>
     <form class="card searchcard" id="search" novalidate>
       <div class="tabs" role="tablist" aria-label="Search by">
         <button type="button" role="tab" data-mode="date" aria-selected="true">New authority</button>
@@ -622,6 +645,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <h2 class="title">Today's calls</h2>
       <p class="lede">Follow-ups that are due, then new leads you haven't called yet. Press Start calling to go through them one by one.</p>
     </div>
+    <div class="clocks" aria-label="Time in the US now"></div>
     <div class="card target">
       <div class="row">
         <div><div class="sub">Today's calls</div><div class="big" id="targetText">0 / 50</div></div>
@@ -1144,6 +1168,15 @@ const callScore = st => { const t = localTime(st); return !t ? 1 : t.fit === "go
 function tzBadge(st, withNote) {
   const t = localTime(st);
   return t ? `<span class="lt ${t.fit}" data-tz="${esc(st)}"${withNote ? " data-note" : ""}>🕗 ${esc(t.text)}${withNote ? " · " + t.note : ""}</span>` : "";
+}
+/* The four main US time zones, green when it's a good time to call. */
+const US_ZONES = [["Pacific", "CA"], ["Mountain", "CO"], ["Central", "TX"], ["Eastern", "NY"]];
+function renderClocks() {
+  const html = `<span class="sub">🕗 US time now:</span>` + US_ZONES.map(([name, st]) => {
+    const t = localTime(st);
+    return `<span class="clock ${t.fit}" title="${t.note}"><i></i>${esc(t.text.replace(/\s\w+$/, ""))} <span>${name}</span></span>`;
+  }).join("");
+  document.querySelectorAll(".clocks").forEach(el => (el.innerHTML = html));
 }
 function tickTimes() {
   document.querySelectorAll("[data-tz]").forEach(el => {
@@ -2460,7 +2493,19 @@ function init() {
 
   window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
   showView(location.hash.slice(1) || "find");
-  setInterval(() => { renderCounts(); tickTimes(); checkReminders(); }, 30000);
+  setInterval(() => { renderCounts(); tickTimes(); renderClocks(); checkReminders(); }, 30000);
+  renderClocks();
+
+  // Light / dark theme (dark by default)
+  const themeBtn = $("#themeBtn");
+  const syncThemeBtn = () => { const dark = document.documentElement.dataset.theme !== "light"; themeBtn.textContent = dark ? "☀" : "🌙"; themeBtn.title = dark ? "Switch to light theme" : "Switch to dark theme"; };
+  syncThemeBtn();
+  themeBtn.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("cs-theme", next); } catch {}
+    syncThemeBtn();
+  });
   checkReminders();
   backfillCarriers();
   run(false);

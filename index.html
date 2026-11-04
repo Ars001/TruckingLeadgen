@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Carrier Scout</title>
 <meta name="description" content="Find new MC carriers with owner names and phone numbers, then work them through calls, follow-ups and a pipeline until they sign.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -324,6 +326,36 @@ td.c-sel input, th.c-sel input { width: 16px; height: 16px; accent-color: var(--
 dialog.form { margin: auto; height: auto; max-height: calc(100% - 32px); width: min(560px, calc(100% - 32px)); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.3); overflow: auto; }
 dialog.form .sheet { padding: 20px; }
 
+/* Insurance line */
+.ins { font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.ins.ok { color: var(--ok); }
+.ins.bad { color: var(--bad); }
+.ins.wait { color: var(--muted); }
+
+/* Daily target */
+.target { padding: 16px 18px; display: grid; gap: 10px; }
+.target .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.target .big { font-size: 22px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.meter { height: 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, #19b46f, var(--accent)); border-radius: 999px; transition: width .4s; }
+.target input { width: 70px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface); }
+.btn.go { font-size: 16px; padding: 12px 22px; }
+
+/* Calling mode */
+dialog.callmode { margin: auto; width: min(620px, calc(100% - 24px)); height: auto; max-height: calc(100% - 24px); border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.35); overflow: auto; }
+.cm { display: grid; gap: 16px; padding: 20px; }
+.cm-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cm-top b { font-variant-numeric: tabular-nums; }
+.cm-card { display: grid; gap: 12px; padding: 18px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
+.cm-card h3 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; }
+.cm-ask { font-size: 20px; font-weight: 700; }
+.cm-call { display: grid; gap: 8px; }
+.cm-call .btn.primary { justify-content: center; font-size: 19px; padding: 16px; border-radius: 12px; }
+.cm-call .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.cm-call .row .btn { flex: 1; justify-content: center; }
+.cm-done { text-align: center; display: grid; gap: 12px; padding: 30px 10px; }
+.cm-done .n { font-size: 46px; font-weight: 800; }
+
 /* Carrier detail panel */
 dialog { border: 0; padding: 0; margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(560px, 100%); max-width: 100%; background: var(--surface); color: var(--ink); box-shadow: -12px 0 40px rgba(0,0,0,.2); }
 dialog::backdrop { background: rgba(10, 20, 15, .45); }
@@ -495,8 +527,10 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <option value="name">Name A–Z</option>
         <option value="state">State</option>
       </select>
+      <button class="btn" id="callNowBtn" type="button" aria-pressed="false">🕗 Good time to call only</button>
       <button class="btn" id="copyCsv" type="button">Copy CSV</button>
       <button class="btn" id="saveCsv" type="button">Download CSV</button>
+      <button class="btn primary" id="startCallsFind" type="button">▶ Start calling</button>
     </div>
     <div class="pills" id="stagetabs" role="group" aria-label="Pipeline stage"></div>
     <div class="bulkbar" id="bulkbar" hidden>
@@ -526,7 +560,15 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <section class="view" id="view-today" hidden>
     <div>
       <h2 class="title">Today's calls</h2>
-      <p class="lede">Follow-ups that are due, then new leads you haven't called yet. Set a follow-up on any carrier from its detail panel.</p>
+      <p class="lede">Follow-ups that are due, then new leads you haven't called yet. Press Start calling to go through them one by one.</p>
+    </div>
+    <div class="card target">
+      <div class="row">
+        <div><div class="sub">Today's calls</div><div class="big" id="targetText">0 / 50</div></div>
+        <button class="btn primary go" type="button" id="startCallsToday">▶ Start calling</button>
+      </div>
+      <div class="meter"><i id="targetBar" style="width:0%"></i></div>
+      <label class="sub">Daily target: <input id="targetInput" class="mono" inputmode="numeric" value="50" aria-label="Daily call target"> calls</label>
     </div>
     <div class="tiles" id="todayTiles"></div>
     <div class="card numbers">
@@ -686,6 +728,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 </main>
 
 <dialog id="detail" aria-label="Carrier details"><div class="sheet" id="sheet"></div></dialog>
+<dialog id="callMode" class="callmode" aria-label="Calling mode"><div class="cm" id="cm"></div></dialog>
 <dialog id="brokerDlg" class="form" aria-label="Broker">
   <form class="sheet" id="brokerForm" method="dialog" novalidate>
     <header><div><h3 id="brokerTitle">Add broker</h3></div><button class="close" type="button" aria-label="Close" data-bclose>×</button></header>
@@ -711,7 +754,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 <script>
 /* ===================== FMCSA data ===================== */
 const API = "https://data.transportation.gov/resource/";
-const DS = { census: "az4n-8mr2", motusHist: "yu5v-wbh6", motusCarrier: "inys-ebih", legacyCarrier: "6eyk-hxee" };
+const DS = { census: "az4n-8mr2", motusHist: "yu5v-wbh6", motusCarrier: "inys-ebih", legacyCarrier: "6eyk-hxee", motusInsur: "c5y8-a4uz", legacyInsur: "qh9u-swkp" };
 
 const CARGO = [
   ["genfreight", "General freight"], ["household", "Household goods"], ["metalsheet", "Metal: sheets, coils, rolls"],
@@ -862,7 +905,27 @@ Thanks,
 
 const STORE_KEY = "carrier-scout-crm";
 let db = { carriers: {}, leads: {}, me: {}, templates: {}, brokers: {} };
-const fromSaved = raw => ({ carriers: raw.carriers || {}, leads: raw.leads || {}, me: raw.me || {}, templates: raw.templates || {}, brokers: raw.brokers || {} });
+/* Saved data (including a restored backup file) is cleaned on load: numbers stay numbers and stages stay known values, so nothing in it can inject markup. */
+const fromSaved = raw => {
+  const obj = v => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+  const carriers = obj(raw.carriers), leads = obj(raw.leads);
+  for (const [k, c] of Object.entries(carriers)) {
+    if (!c || typeof c !== "object") { delete carriers[k]; continue; }
+    c.dot = Number(c.dot) || Number(k) || 0;
+    ["trucks", "drivers", "cdl"].forEach(f => (c[f] = Number(c[f]) || 0));
+    c.miles = Number(c.miles) || null;
+    ["people", "equipment", "cargo", "authTypes"].forEach(f => (c[f] = Array.isArray(c[f]) ? c[f].map(String) : []));
+  }
+  for (const [k, l] of Object.entries(leads)) {
+    if (!l || typeof l !== "object") { delete leads[k]; continue; }
+    if (!STAGE_LABEL[l.stage]) l.stage = "new";
+    l.log = Array.isArray(l.log) ? l.log.filter(e => e && typeof e === "object").map(e => ({ t: Number(e.t) || Date.now(), kind: String(e.kind || "note"), text: String(e.text || "") })) : [];
+    l.added = Number(l.added) || Date.now(); l.updated = Number(l.updated) || Date.now();
+    l.customer = obj(l.customer);
+    if (l.followUp && isNaN(new Date(l.followUp))) l.followUp = null;
+  }
+  return { carriers, leads, me: obj(raw.me), templates: obj(raw.templates), brokers: obj(raw.brokers) };
+};
 
 function loadDb() {
   try {
@@ -1074,7 +1137,7 @@ function logCall(dot, key) {
 const state = {
   mode: "date", driver: "both", equipment: new Set(), cargo: new Set(),
   results: [], lastMode: "date", offset: 0, runId: 0, abort: null, lastFilters: null, excluded: {},
-  tab: "all", q: "", shown: SHOW_STEP, view: "find", pq: "", bq: "", selected: new Set(), pageDots: []
+  tab: "all", q: "", shown: SHOW_STEP, view: "find", pq: "", bq: "", selected: new Set(), pageDots: [], callNow: false
 };
 
 function setStatus(text) { $("#status").hidden = !text; $("#statusText").textContent = text || ""; }
@@ -1289,6 +1352,7 @@ function sortedResults() {
 }
 function visibleResults() {
   return sortedResults().filter(x => {
+    if (state.callNow && localTime(x.c.state)?.fit !== "good") return false;
     const s = stageOf(x.dot);
     if (state.tab === "unsaved" && s) return false;
     if (state.tab !== "all" && state.tab !== "unsaved" && s !== state.tab) return false;
@@ -1428,6 +1492,15 @@ function renderToday() {
     : section("Overdue", over, "due", "Nothing overdue. Nice.") + section("Due today", today, "due", "No more follow-ups today.") +
       section("New leads to call", fresh.slice(0, 50), "new", "No uncalled leads. Add more from Find carriers.") + section("Coming up (next 7 days)", soon, "due", "Nothing scheduled this week.");
   renderNumbers();
+  renderTarget();
+}
+/* Who to call now, in order: overdue, due today, then new leads not called yet. */
+function todayQueue() {
+  const now = new Date(), eod = endOfDay();
+  const leads = savedLeads().filter(x => !["lost", "signed"].includes(x.l.stage));
+  const due = leads.filter(x => x.l.followUp && new Date(x.l.followUp) <= eod).sort((a, b) => a.l.followUp.localeCompare(b.l.followUp));
+  const fresh = leads.filter(x => x.l.stage === "new" && !x.l.followUp).sort((a, b) => b.l.added - a.l.added);
+  return [...due, ...fresh].map(x => x.dot);
 }
 
 /* Activity numbers from every carrier's log. */
@@ -1458,6 +1531,99 @@ function renderNumbers() {
   $("#barlabels").innerHTML = days.map(d => `<span>${d.toLocaleDateString("en-US", { weekday: "narrow" })}</span>`).join("");
   const perm = "Notification" in window ? Notification.permission : "unsupported";
   $("#remindBtn").textContent = perm === "granted" ? "🔔 Reminders on" : perm === "denied" ? "🔕 Reminders blocked in browser" : "🔔 Turn on follow-up reminders";
+}
+
+/* ===================== Insurance ===================== */
+/* Liability insurance on file with FMCSA: Motus filings first, older L&I filings as a fallback. Looked up when a carrier is opened. */
+const insCache = new Map();
+function loadInsurance(dot) {
+  if (insCache.has(dot)) return insCache.get(dot);
+  const p = (async () => {
+    try {
+      const rows = await soql(DS.motusInsur, { $select: "ins_form_code,max_cov_amount,insurance_company_name,effective_date", $where: `usdot_number='${dot}'`, $order: "effective_date DESC", $limit: 20 });
+      const liab = rows.find(r => /91/.test(r.ins_form_code || ""));
+      if (liab) return { found: true, company: titleCase(liab.insurance_company_name || ""), amount: Math.round(parseFloat(liab.max_cov_amount) || 0), since: liab.effective_date, cargo: rows.some(r => /34/.test(r.ins_form_code || "")) };
+      const old = await soql(DS.legacyInsur, { $select: "mod_col_1,max_cov_amount,name_company", $where: `dot_number='${String(dot).padStart(8, "0")}'`, $limit: 20 });
+      const l = old.find(r => /BIPD/i.test(r.mod_col_1 || ""));
+      if (l) return { found: true, company: titleCase(l.name_company || ""), amount: (parseFloat(l.max_cov_amount) || 0) * 1000, cargo: old.some(r => /CARGO/i.test(r.mod_col_1 || "")) };
+      return { found: false };
+    } catch { insCache.delete(dot); return { error: true }; }
+  })();
+  insCache.set(dot, p);
+  return p;
+}
+function insuranceHtml(ins) {
+  if (!ins) return `<span>🛡 Checking insurance…</span>`;
+  if (ins.error) return `<span>🛡 Couldn't check insurance right now</span>`;
+  if (!ins.found) return `<span>⚠ No liability insurance found in FMCSA records</span>`;
+  return `<span>🛡 Insured</span>${ins.company ? `<b>${esc(ins.company)}</b>` : ""}${ins.amount ? `<span>$${ins.amount.toLocaleString()}</span>` : ""}${ins.since ? `<span class="sub">since ${esc(fmtDate(ins.since))}</span>` : ""}${ins.cargo ? `<span class="sub">· cargo insurance too</span>` : ""}`;
+}
+/* Fill every [data-ins] placeholder for this carrier once the lookup finishes. */
+function fillInsurance(dot) {
+  loadInsurance(dot).then(ins => document.querySelectorAll(`[data-ins="${dot}"]`).forEach(el => {
+    el.className = "ins " + (ins.error ? "wait" : ins.found ? "ok" : "bad");
+    el.innerHTML = insuranceHtml(ins);
+  }));
+}
+const insPlaceholder = dot => `<div class="ins wait" data-ins="${dot}">${insuranceHtml(null)}</div>`;
+
+/* ===================== Daily target ===================== */
+const callsToday = () => { const t0 = startOfDay().getTime(); return Object.values(db.leads).flatMap(l => l.log || []).filter(e => e.kind === "call" && e.t >= t0).length; };
+const dailyTarget = () => Math.max(1, parseInt(db.me?.target, 10) || 50);
+function renderTarget() {
+  const n = callsToday(), goal = dailyTarget();
+  $("#targetText").textContent = `${n} / ${goal}${n >= goal ? " 🎉" : ""}`;
+  $("#targetBar").style.width = Math.min(100, Math.round(n / goal * 100)) + "%";
+  if (document.activeElement !== $("#targetInput")) $("#targetInput").value = goal;
+}
+
+/* ===================== Calling mode ===================== */
+/* One carrier at a time: call, tap what happened, the next one appears. */
+const cm = { queue: [], i: 0, made: 0 };
+function startCalling(dots, label) {
+  const queue = dots.filter(d => carrierFor(d) && carrierFor(d).phone);
+  if (!queue.length) { toast("No carriers with a phone number to call here."); return; }
+  Object.assign(cm, { queue, i: 0, made: 0, label });
+  renderCallMode();
+  $("#callMode").showModal();
+}
+function renderCallMode() {
+  const box = $("#cm"), goal = dailyTarget(), today = callsToday();
+  const top = `<div class="cm-top"><span class="sub">${esc(cm.label)} · <b>${Math.min(cm.i + 1, cm.queue.length)} of ${cm.queue.length}</b></span><button class="btn small" type="button" data-cm="exit">Exit</button></div>
+    <div><div class="sub">Today: <b>${today} / ${goal}</b> calls</div><div class="meter"><i style="width:${Math.min(100, Math.round(today / goal * 100))}%"></i></div></div>`;
+  if (cm.i >= cm.queue.length) {
+    box.innerHTML = top + `<div class="cm-done"><div class="n">🎉 ${cm.made}</div><div><b>calls logged in this round.</b></div><div class="sub">Follow-ups were set automatically. Check the Today page for who to call next.</div><div><button class="btn primary go" type="button" data-cm="exit">Finish</button></div></div>`;
+    return;
+  }
+  const dot = cm.queue[cm.i], c = carrierFor(dot), lead = leadOf(dot);
+  const d10 = digits(c.phone).slice(-10), msg = encodeURIComponent(fillTemplate(template("text").body, c));
+  const last = lead?.log?.find(e => e.kind === "note" || e.kind === "call");
+  box.innerHTML = top + `
+    <div class="cm-card">
+      <div class="who2">${avatar(c.name, true)}<div><h3>${esc(c.name)}</h3><div class="ids">${esc(c.mc)} · DOT ${dot} · ${esc(c.city)}, ${esc(c.state)}</div></div></div>
+      <div><div class="sub">Ask for</div><div class="cm-ask">${c.people.length ? esc(c.people.join(" or ")) : "The owner"}</div>${tzBadge(c.state, true)}</div>
+      ${insPlaceholder(dot)}
+      <div class="sub">${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 3).join(", ")) : ""}${lead ? ` · <span class="chipstage st-${lead.stage}">${STAGE_LABEL[lead.stage]}</span>` : ""}</div>
+      ${last ? `<div class="sub">Last time: ${esc(last.text)} (${esc(fmtWhen(last.t))})</div>` : ""}
+    </div>
+    <div class="cm-call">
+      <a class="btn primary" href="${telHref(c.phone)}">📞 Call ${esc(fmtPhone(c.phone))}</a>
+      <div class="row">
+        <a class="btn" href="https://wa.me/1${d10}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn" href="sms:+1${d10}?&body=${msg}">Text</a>
+        <button class="btn" type="button" data-copy="${esc(fmtPhone(c.phone))}">Copy number</button>
+      </div>
+    </div>
+    <div class="addnote"><input id="cmNote" placeholder="Note (optional): e.g. 2 reefers, wants Texas loads"></div>
+    <section style="display:grid;gap:8px">
+      <h4 class="label" style="margin:0">After the call, tap what happened</h4>
+      <div class="pickrow big">${Object.entries(CALL_OUTCOMES).map(([k, o]) => `<button type="button" data-cmcall="${k}">${o.label}</button>`).join("")}</div>
+    </section>
+    <div class="buttons" style="justify-content:space-between">
+      <button class="btn" type="button" data-cm="back" ${cm.i === 0 ? "disabled" : ""}>← Back</button>
+      <button class="btn" type="button" data-cm="skip">Skip ⏭</button>
+    </div>`;
+  fillInsurance(dot);
 }
 
 /* ===================== Follow-up reminders ===================== */
@@ -1616,6 +1782,7 @@ function renderDetail() {
 
     <div class="callcard">
       <div><div class="sub">Ask for</div><div class="who">${c.people.length ? esc(c.people.join(" or ")) : "The owner (no name listed)"}</div>${tzBadge(c.state, true)}</div>
+      ${insPlaceholder(dot)}
       <div class="actions">
         ${phone ? `<a class="btn primary" href="${telHref(c.phone)}">📞 Call ${esc(phone)}</a>
           <a class="btn" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>
@@ -1694,6 +1861,7 @@ function renderDetail() {
     </details>
 
     ${lead ? `<section><button class="btn danger" type="button" id="removeLead">Remove from pipeline</button></section>` : ""}`;
+  fillInsurance(dot);
 }
 
 /* ===================== export & backup ===================== */
@@ -1947,6 +2115,54 @@ function init() {
   // CSV
   $("#copyCsv").addEventListener("click", () => { const n = visibleResults().length; if (!n) { toast("Nothing to copy yet. Run a search first."); return; } copyText(csv(), `Copied ${n} carriers as CSV`); });
   $("#saveCsv").addEventListener("click", () => { if (!visibleResults().length) { toast("Nothing to download yet. Run a search first."); return; } download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(), "text/csv;charset=utf-8"); });
+
+  // Good time to call only
+  $("#callNowBtn").addEventListener("click", e => {
+    state.callNow = !state.callNow; state.shown = SHOW_STEP;
+    e.currentTarget.setAttribute("aria-pressed", String(state.callNow));
+    renderFind();
+    if (state.callNow) toast(`${visibleResults().length} carriers where it's 8 AM–6 PM right now`);
+  });
+
+  // Calling mode
+  $("#startCallsFind").addEventListener("click", () => {
+    const dots = visibleResults().filter(x => !["lost", "signed"].includes(stageOf(x.dot))).map(x => x.dot);
+    startCalling(dots, "Search results");
+  });
+  $("#startCallsToday").addEventListener("click", () => {
+    const q = todayQueue();
+    if (!q.length) { toast("Nobody to call yet. Add carriers to your pipeline from Find carriers."); return; }
+    startCalling(q, "Today's list");
+  });
+  const cmd = $("#callMode");
+  cmd.addEventListener("click", e => {
+    const copy = e.target.closest("[data-copy]"); if (copy) { copyText(copy.dataset.copy, "Copied " + copy.dataset.copy); return; }
+    const a = e.target.closest("[data-cm]");
+    if (a) {
+      const k = a.dataset.cm;
+      if (k === "exit") { cmd.close(); return; }
+      if (k === "skip") cm.i++;
+      if (k === "back") cm.i = Math.max(0, cm.i - 1);
+      renderCallMode(); return;
+    }
+    const o = e.target.closest("[data-cmcall]");
+    if (o) {
+      const dot = cm.queue[cm.i], note = $("#cmNote")?.value.trim();
+      if (note) logActivity(dot, "note", note);
+      const f = logCall(dot, o.dataset.cmcall);
+      cm.made++; cm.i++;
+      toast(f ? `Saved. Next call ${fmtWhen(f)}` : "Saved");
+      renderCallMode();
+    }
+  });
+  cmd.addEventListener("keydown", e => { if (e.target.id === "cmNote" && e.key === "Enter") e.preventDefault(); });
+  cmd.addEventListener("close", renderAll);
+
+  // Daily target
+  $("#targetInput").addEventListener("change", e => {
+    const n = Math.max(1, Math.min(500, parseInt(e.target.value, 10) || 50));
+    db.me = { ...db.me, target: n }; saveDb(); renderTarget(); toast(`Daily target: ${n} calls`);
+  });
 
   // Reminders
   $("#remindBtn").addEventListener("click", async () => {

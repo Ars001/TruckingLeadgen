@@ -30,6 +30,7 @@
   --warn: #8f5b00; --warn-soft: #fbefd6;
   --bad: #b3261e; --bad-soft: #fbe3e1;
   --violet: #6b3fa0; --violet-soft: #efe6f8;
+  --hot: #b4440f; --hot-soft: #ffe8d9;
   --shadow: 0 1px 2px rgba(16, 40, 28, .05), 0 10px 30px -12px rgba(16, 40, 28, .14);
   --font-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --font-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
@@ -41,6 +42,7 @@
     --accent: #0f8a58; --accent-ink: #ffffff; --accent-soft: #163a29; --hero: #04170f; --hero-ink: #e3f3ea; --av-bg: 24%; --av-fg: 82%;
     --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
     --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
+    --hot: #ffa36b; --hot-soft: #3d2416;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
     color-scheme: dark;
   }
@@ -50,6 +52,7 @@
   --accent: #0f8a58; --accent-ink: #ffffff; --accent-soft: #163a29; --hero: #04170f; --hero-ink: #e3f3ea; --av-bg: 24%; --av-fg: 82%;
   --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
   --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
+  --hot: #ffa36b; --hot-soft: #3d2416;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
   color-scheme: dark;
 }
@@ -326,6 +329,16 @@ td.c-sel input, th.c-sel input { width: 16px; height: 16px; accent-color: var(--
 dialog.form { margin: auto; height: auto; max-height: calc(100% - 32px); width: min(560px, calc(100% - 32px)); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.3); overflow: auto; }
 dialog.form .sheet { padding: 20px; }
 
+/* Lead heat and ready-to-haul */
+.heat { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 9px; white-space: nowrap; margin-bottom: 4px; cursor: help; }
+.heat.hot { background: var(--hot-soft); color: var(--hot); }
+.heat.warm { background: var(--warn-soft); color: var(--warn); }
+.heat.cold { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.rdy { display: inline-block; font-size: 11.5px; font-weight: 700; margin-top: 4px; white-space: nowrap; }
+.rdy.ok { color: var(--ok); }
+.rdy.bad { color: var(--bad); }
+.rdy.wait { color: var(--muted); font-weight: 500; }
+
 /* Insurance line */
 .ins { font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
 .ins.ok { color: var(--ok); }
@@ -521,6 +534,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <input id="q" type="search" placeholder="Filter by name, owner, phone, city, MC…" autocomplete="off" aria-label="Filter results">
       </div>
       <select id="sort" aria-label="Sort">
+        <option value="hot" selected>🔥 Hot leads first</option>
         <option value="recent">Newest first</option>
         <option value="calltime">Good time to call now</option>
         <option value="trucks">Most trucks</option>
@@ -754,7 +768,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 <script>
 /* ===================== FMCSA data ===================== */
 const API = "https://data.transportation.gov/resource/";
-const DS = { census: "az4n-8mr2", motusHist: "yu5v-wbh6", motusCarrier: "inys-ebih", legacyCarrier: "6eyk-hxee", motusInsur: "c5y8-a4uz", legacyInsur: "qh9u-swkp" };
+const DS = { census: "az4n-8mr2", motusHist: "yu5v-wbh6", motusCarrier: "inys-ebih", legacyCarrier: "6eyk-hxee", motusInsur: "c5y8-a4uz", legacyInsur: "qh9u-swkp", motusBoc3: "6snj-ed7q", legacyBoc3: "2emp-mxtb" };
 
 const CARGO = [
   ["genfreight", "General freight"], ["household", "Household goods"], ["metalsheet", "Metal: sheets, coils, rolls"],
@@ -1343,7 +1357,8 @@ function matchesQuery(c, q, dot) {
 }
 function sortedResults() {
   const list = [...state.results], by = $("#sort").value;
-  if (by === "trucks") list.sort((a, b) => b.c.trucks - a.c.trucks);
+  if (by === "hot") list.sort((a, b) => leadScore(b.c).s - leadScore(a.c).s || (b.c.authDate || b.c.added).localeCompare(a.c.authDate || a.c.added));
+  else if (by === "trucks") list.sort((a, b) => b.c.trucks - a.c.trucks);
   else if (by === "calltime") list.sort((a, b) => callScore(a.c.state) - callScore(b.c.state) || (b.c.authDate || b.c.added).localeCompare(a.c.authDate || a.c.added));
   else if (by === "name") list.sort((a, b) => a.c.name.localeCompare(b.c.name));
   else if (by === "state") list.sort((a, b) => a.c.state.localeCompare(b.c.state) || a.c.city.localeCompare(b.c.city));
@@ -1400,7 +1415,8 @@ function renderFind() {
   if (ex.pending) parts.push(`${ex.pending} pending`);
   if (ex.revocation) parts.push(`${ex.revocation} revocation pending`);
   if (ex.none) parts.push(`${ex.none} without MC authority`);
-  $("#excluded").textContent = parts.length ? `Left out: ${parts.join(", ")}` : "";
+  const hot = state.results.filter(x => leadScore(x.c).level === "hot").length;
+  $("#excluded").textContent = [hot ? `🔥 ${hot} hot leads` : "", parts.length ? `Left out: ${parts.join(", ")}` : ""].filter(Boolean).join("  ·  ");
   renderStageTabs();
 
   const list = visibleResults(), body = $("#rows");
@@ -1425,8 +1441,8 @@ function renderFind() {
     return `<tr data-i="${dot}" class="${s === "lost" ? "done" : ""}">
       <td class="c-sel"><input type="checkbox" data-sel="${dot}"${state.selected.has(dot) ? " checked" : ""} aria-label="Select ${esc(c.name)}"></td>
       <td class="c-lead">${stageSelect(dot)}${dueBadge(lead) ? `<div>${dueBadge(lead)}</div>` : ""}${last ? `<span class="lastnote" title="${esc(last.text)}">${esc(last.text)}</span>` : ""}</td>
-      <td class="c-carrier"><div class="who2">${avatar(c.name)}<div><div class="cname">${esc(c.name)}</div>${c.dba ? `<div class="sub">DBA ${esc(c.dba)}</div>` : ""}<div class="ids">${esc(c.mc)} · DOT ${dot}</div></div></div></td>
-      <td class="c-status"><span class="pill">● Active</span><div class="sub">MC &amp; USDOT</div></td>
+      <td class="c-carrier"><div class="who2">${avatar(c.name)}<div>${heatBadge(c)}<div class="cname">${esc(c.name)}</div>${c.dba ? `<div class="sub">DBA ${esc(c.dba)}</div>` : ""}<div class="ids">${esc(c.mc)} · DOT ${dot}</div></div></div></td>
+      <td class="c-status"><span class="pill">● Active</span><div class="sub">MC &amp; USDOT</div>${readyPlaceholder(dot)}</td>
       <td class="c-person">${personCell(c)}</td>
       <td class="c-phone">${phoneCell(c)}</td>
       <td class="email c-email">${c.email ? `<a href="mailto:${esc(c.email)}" data-stop>${esc(c.email)}</a>` : `<span class="sub">–</span>`}</td>
@@ -1441,6 +1457,7 @@ function renderFind() {
   $("#showMore").hidden = left <= 0;
   $("#showMore").textContent = `Show ${Math.min(SHOW_STEP, left)} more (${left} left)`;
   renderBulk();
+  fillReady(state.pageDots);
 }
 
 /* Bulk selection on the results table */
@@ -1567,6 +1584,89 @@ function fillInsurance(dot) {
 }
 const insPlaceholder = dot => `<div class="ins wait" data-ins="${dot}">${insuranceHtml(null)}</div>`;
 
+/* ===================== Hot lead score ===================== */
+/* How likely a carrier is to want a dispatcher: brand-new authority, a small fleet and reachable contact details score highest. */
+const POPULAR_EQUIP = ["Dry van", "Reefer", "Flatbed", "Box truck", "Power only", "Step deck"];
+const scoreCache = new WeakMap();
+function leadScore(c) {
+  if (!scoreCache.has(c)) scoreCache.set(c, computeScore(c));
+  return scoreCache.get(c);
+}
+function computeScore(c) {
+  let s = 0; const why = [];
+  const ref = c.authDate || c.added;
+  if (ref && ref.length >= 8) {
+    const days = Math.max(0, Math.floor((Date.now() - new Date(+ref.slice(0, 4), +ref.slice(4, 6) - 1, +ref.slice(6, 8))) / 864e5));
+    if (days <= 7) { s += 25; why.push(`brand new (${days} ${days === 1 ? "day" : "days"})`); }
+    else if (days <= 30) { s += 18; why.push(`${days} days old`); }
+    else if (days <= 90) { s += 10; why.push(`${days} days old`); }
+  }
+  if (c.trucks === 1) { s += 25; why.push("1 truck"); }
+  else if (c.trucks >= 2 && c.trucks <= 3) { s += 20; why.push(`${c.trucks} trucks`); }
+  else if (c.trucks >= 4 && c.trucks <= 10) { s += 8; why.push(`${c.trucks} trucks`); }
+  else if (c.trucks > 10) why.push(`${c.trucks} trucks (big fleet)`);
+  if (c.phone) s += 12;
+  if (c.email) s += 8;
+  why.push(c.phone && c.email ? "phone + email" : c.phone ? "phone only" : "no phone");
+  if (c.cell && digits(c.cell) !== digits(c.phone)) { s += 5; why.push("cell number too"); }
+  if (c.people.length) s += 5;
+  const eq = c.equipment.find(e => POPULAR_EQUIP.includes(e));
+  if (eq) { s += 10; why.push(eq.toLowerCase()); } else why.push("equipment unknown");
+  if (c.cdl > 0 || c.equipment.includes("Box truck")) s += 5;
+  s = Math.min(100, s);
+  return { s, level: s >= 85 ? "hot" : s >= 75 ? "warm" : "cold", why };
+}
+const HEAT = { hot: "🔥 Hot", warm: "🙂 Warm", cold: "❄ Cold" };
+function heatBadge(c) {
+  const h = leadScore(c);
+  return `<span class="heat ${h.level}" title="Score ${h.s}/100: ${esc(h.why.join(", "))}">${HEAT[h.level]} ${h.s}</span>`;
+}
+
+/* ===================== Ready to haul ===================== */
+/* Liability insurance and a BOC-3 process agent on file. Checked in one batch for the carriers on screen. */
+const readyCache = new Map();
+async function loadReadiness(dots) {
+  const need = [...new Set(dots)].filter(d => d && !readyCache.has(d));
+  if (!need.length) return;
+  need.forEach(d => readyCache.set(d, null));
+  try {
+    const hasIns = new Set(), agent = new Map();
+    await inBatches(need, 100, async chunk => {
+      const q = chunk.map(d => `'${d}'`).join(",");
+      const [ins, boc] = await Promise.all([
+        soql(DS.motusInsur, { $select: "usdot_number,ins_form_code", $where: `usdot_number in (${q})`, $limit: 5000 }),
+        soql(DS.motusBoc3, { $select: "usdot_number,co_name", $where: `usdot_number in (${q})`, $limit: 5000 })
+      ]);
+      ins.filter(r => /91/.test(r.ins_form_code || "")).forEach(r => hasIns.add(num(r.usdot_number)));
+      boc.forEach(r => agent.set(num(r.usdot_number), r.co_name || "on file"));
+      const missing = chunk.filter(d => !hasIns.has(d) || !agent.has(d));
+      if (missing.length) {
+        const p8 = missing.map(d => `'${String(d).padStart(8, "0")}'`).join(",");
+        const [ins2, boc2] = await Promise.all([
+          soql(DS.legacyInsur, { $select: "dot_number,mod_col_1", $where: `dot_number in (${p8})`, $limit: 5000 }),
+          soql(DS.legacyBoc3, { $select: "dot_number,co_name", $where: `dot_number in (${p8})`, $limit: 5000 })
+        ]);
+        ins2.filter(r => /BIPD/i.test(r.mod_col_1 || "")).forEach(r => hasIns.add(num(r.dot_number)));
+        boc2.forEach(r => { const d = num(r.dot_number); if (!agent.has(d)) agent.set(d, r.co_name || "on file"); });
+      }
+      return [];
+    });
+    need.forEach(d => readyCache.set(d, { ins: hasIns.has(d), boc: agent.has(d), agent: titleCase(agent.get(d) || "") }));
+  } catch { need.forEach(d => readyCache.delete(d)); }
+}
+function readyHtml(r) {
+  if (!r) return `<span class="rdy wait">Checking…</span>`;
+  if (r.ins && r.boc) return `<span class="rdy ok" title="Insurance and BOC-3 process agent on file">✅ Ready to haul</span>`;
+  return `<span class="rdy bad">⚠ ${!r.ins && !r.boc ? "No insurance or BOC-3" : !r.ins ? "No insurance on file" : "No BOC-3 on file"}</span>`;
+}
+const readyPlaceholder = dot => `<div data-ready="${dot}">${readyHtml(readyCache.get(dot))}</div>`;
+function fillReady(dots) {
+  loadReadiness(dots).then(() => document.querySelectorAll("[data-ready]").forEach(el => {
+    const r = readyCache.get(+el.dataset.ready);
+    if (r) el.innerHTML = readyHtml(r) + (el.hasAttribute("data-agent") && r.agent ? ` <span class="sub">· Process agent: ${esc(r.agent)}</span>` : "");
+  }));
+}
+
 /* ===================== Daily target ===================== */
 const callsToday = () => { const t0 = startOfDay().getTime(); return Object.values(db.leads).flatMap(l => l.log || []).filter(e => e.kind === "call" && e.t >= t0).length; };
 const dailyTarget = () => Math.max(1, parseInt(db.me?.target, 10) || 50);
@@ -1601,8 +1701,10 @@ function renderCallMode() {
   box.innerHTML = top + `
     <div class="cm-card">
       <div class="who2">${avatar(c.name, true)}<div><h3>${esc(c.name)}</h3><div class="ids">${esc(c.mc)} · DOT ${dot} · ${esc(c.city)}, ${esc(c.state)}</div></div></div>
+      <div>${heatBadge(c)} <span class="sub">${esc(leadScore(c).why.join(" · "))}</span></div>
       <div><div class="sub">Ask for</div><div class="cm-ask">${c.people.length ? esc(c.people.join(" or ")) : "The owner"}</div>${tzBadge(c.state, true)}</div>
       ${insPlaceholder(dot)}
+      ${readyPlaceholder(dot)}
       <div class="sub">${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 3).join(", ")) : ""}${lead ? ` · <span class="chipstage st-${lead.stage}">${STAGE_LABEL[lead.stage]}</span>` : ""}</div>
       ${last ? `<div class="sub">Last time: ${esc(last.text)} (${esc(fmtWhen(last.t))})</div>` : ""}
     </div>
@@ -1624,6 +1726,7 @@ function renderCallMode() {
       <button class="btn" type="button" data-cm="skip">Skip ⏭</button>
     </div>`;
   fillInsurance(dot);
+  fillReady([dot]);
 }
 
 /* ===================== Follow-up reminders ===================== */
@@ -1781,8 +1884,10 @@ function renderDetail() {
     </header>
 
     <div class="callcard">
+      <div>${heatBadge(c)} <span class="sub">${esc(leadScore(c).why.join(" · "))}</span></div>
       <div><div class="sub">Ask for</div><div class="who">${c.people.length ? esc(c.people.join(" or ")) : "The owner (no name listed)"}</div>${tzBadge(c.state, true)}</div>
       ${insPlaceholder(dot)}
+      <div data-ready="${dot}" data-agent>${readyHtml(readyCache.get(dot))}</div>
       <div class="actions">
         ${phone ? `<a class="btn primary" href="${telHref(c.phone)}">📞 Call ${esc(phone)}</a>
           <a class="btn" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>
@@ -1862,17 +1967,19 @@ function renderDetail() {
 
     ${lead ? `<section><button class="btn danger" type="button" id="removeLead">Remove from pipeline</button></section>` : ""}`;
   fillInsurance(dot);
+  fillReady([dot]);
 }
 
 /* ===================== export & backup ===================== */
 function csv() {
-  const head = ["Pipeline stage", "Follow-up", "Last note", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts",
+  const head = ["Lead score", "Pipeline stage", "Follow-up", "Last note", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts",
     "Phone", "Cell", "Email", "Street", "City", "State", "ZIP", "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo",
     "Authority event", "Authority date", "Registered", "MCS-150 date", "Safety rating"];
   const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   const lines = visibleResults().map(({ dot, c }) => {
     const l = leadOf(dot);
-    return [l ? STAGE_LABEL[l.stage] : "", l?.followUp ? fmtWhen(l.followUp) : "", l?.log?.find(e => e.kind === "note")?.text || "",
+    const h = leadScore(c);
+    return [`${HEAT[h.level].replace(/^\S+\s/, "")} ${h.s}`, l ? STAGE_LABEL[l.stage] : "", l?.followUp ? fmtWhen(l.followUp) : "", l?.log?.find(e => e.kind === "note")?.text || "",
       c.mc, dot, "Active", "Active", c.name, c.dba, c.people[0] || "", c.people.slice(1).join("; "), fmtPhone(c.phone), fmtPhone(c.cell), c.email,
       c.street, c.city, c.state, c.zip, c.trucks, c.drivers, c.cdl, c.equipment.join("; "), c.cargo.join("; "),
       c.authEvent, fmtDate(c.authDate), fmtDate(c.added), fmtDate(c.mcs150), RATING[c.rating] || ""].map(q).join(",");

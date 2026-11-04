@@ -6,11 +6,11 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("cs-theme") || "dark"; } catch { document.documentElement.dataset.theme = "dark"; }</script>
-<title>Carrier Scout – New MC Carrier Leads with Owner Phone Numbers</title>
+<title>DispatchWala – New MC Carrier Leads & Calling CRM for Truck Dispatchers</title>
 <meta name="description" content="Free tool for truck dispatchers: find newly authorized, active MC carriers from FMCSA data with owner names, phone numbers, insurance and fleet size, then call and follow up in a simple built-in CRM.">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Carrier Scout – New MC Carrier Leads for Truck Dispatchers">
+<meta property="og:title" content="DispatchWala – New MC Carrier Leads for Truck Dispatchers">
 <meta property="og:description" content="Find new, active MC carriers with owner names and phone numbers. Updated daily from FMCSA. Built-in calling mode, follow-ups and saved leads.">
 <meta property="og:url" content="https://ars001.github.io/TruckingLeadgen/">
 <meta name="twitter:card" content="summary">
@@ -21,7 +21,7 @@
   "@graph": [
     {
       "@type": "SoftwareApplication",
-      "name": "Carrier Scout",
+      "name": "DispatchWala",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web browser",
       "description": "Lead finder and calling CRM for truck dispatchers. Finds newly authorized, active MC carriers from FMCSA data with owner names, phone numbers, insurance status and fleet size.",
@@ -35,8 +35,8 @@
         { "@type": "Question", "name": "How up to date is the data?", "acceptedAnswer": { "@type": "Answer", "text": "Authority and status data update daily. Phone, owner and fleet details from the census can lag one to three days for brand-new carriers." } },
         { "@type": "Question", "name": "Does it only show active carriers?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every carrier shown has active MC authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out." } },
         { "@type": "Question", "name": "Does it show owner names and phone numbers?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It shows the company officers listed on the carrier's MCS-150, plus the phone number and email on file with FMCSA." } },
-        { "@type": "Question", "name": "Is Carrier Scout affiliated with FMCSA?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is an independent tool that uses FMCSA's public open data and is not affiliated with FMCSA or the U.S. Department of Transportation." } },
-        { "@type": "Question", "name": "Where are my saved leads and notes stored?", "acceptedAnswer": { "@type": "Answer", "text": "Only in your own browser on your device. Nothing is sent to a Carrier Scout server. Use Download backup to keep a copy." } }
+        { "@type": "Question", "name": "Is DispatchWala affiliated with FMCSA?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is an independent tool that uses FMCSA's public open data and is not affiliated with FMCSA or the U.S. Department of Transportation." } },
+        { "@type": "Question", "name": "Where are my saved leads and notes stored?", "acceptedAnswer": { "@type": "Answer", "text": "Only in your own browser on your device. Nothing is sent to a DispatchWala server. Use Download backup to keep a copy." } }
       ]
     }
   ]
@@ -132,6 +132,7 @@ h2.title { margin: 0; font-family: var(--font-display); font-size: clamp(24px, 3
 .logo svg { width: 24px; height: 24px; color: #fff; }
 .brand b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; }
 .brand small { display: block; font-size: 12.5px; opacity: .75; }
+.brand .wala { color: #3ee08f; }
 .live { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); padding: 6px 12px; border-radius: 999px; }
 .live i { width: 8px; height: 8px; border-radius: 50%; background: #3ee08f; box-shadow: 0 0 0 0 rgba(62, 224, 143, .6); animation: pulse 2s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(62, 224, 143, .55); } 70% { box-shadow: 0 0 0 8px rgba(62, 224, 143, 0); } 100% { box-shadow: 0 0 0 0 rgba(62, 224, 143, 0); } }
@@ -506,9 +507,9 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 
 <header class="band">
   <div class="wrap bandrow">
-    <a class="brand" href="#find" aria-label="Carrier Scout home">
+    <a class="brand" href="#find" aria-label="DispatchWala home">
       <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5h11v9H2z"/><path d="M13 9.5h4.2l3.3 3.3v2.7H13z"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span>
-      <span><b>Carrier Scout</b><small>Find carriers. Call. Sign them.</small></span>
+      <span><b>Dispatch<span class="wala">Wala</span></b><small>Find carriers. Call. Sign them.</small></span>
     </a>
     <div class="bandright">
       <span class="live"><i></i> Live FMCSA data · updated daily</span>
@@ -828,7 +829,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
           <div><b>Does it only show active carriers?</b>Yes. Every carrier shown has active MC authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</div>
           <div><b>Does it show owner names and phone numbers?</b>Yes: the company officers listed on the carrier's MCS-150, plus the phone and email on file with FMCSA.</div>
           <div><b>The Call button does nothing.</b>On a computer, choose your calling app under "Call with" (Google Voice, Teams, Skype, Zoom Phone, or Just copy the number). Every Call click also copies the number.</div>
-          <div><b>Is Carrier Scout affiliated with FMCSA?</b>No. It's an independent tool that uses FMCSA's public open data.</div>
+          <div><b>Is DispatchWala affiliated with FMCSA?</b>No. It's an independent tool that uses FMCSA's public open data.</div>
           <div><b>Where are my saved leads and notes stored?</b>Only in your own browser. Use Download backup under Scripts &amp; settings to keep a copy.</div>
         </div>
       </div>
@@ -881,8 +882,8 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <!-- ============ TERMS ============ -->
   <section class="view" id="view-terms" hidden>
     <div class="card guide">
-      <div><h2 class="title">Terms of Service</h2><p class="lede">Last updated November 4, 2026. By using Carrier Scout you agree to these terms.</p></div>
-      <div><h3>What the service is</h3><p>Carrier Scout is a tool that searches public data published by the Federal Motor Carrier Safety Administration (FMCSA) on data.transportation.gov and helps you organize your own sales calls. Carrier Scout is <b>not affiliated with, endorsed by, or operated by FMCSA or the U.S. Department of Transportation</b>.</p></div>
+      <div><h2 class="title">Terms of Service</h2><p class="lede">Last updated November 4, 2026. By using DispatchWala you agree to these terms.</p></div>
+      <div><h3>What the service is</h3><p>DispatchWala is a tool that searches public data published by the Federal Motor Carrier Safety Administration (FMCSA) on data.transportation.gov and helps you organize your own sales calls. DispatchWala is <b>not affiliated with, endorsed by, or operated by FMCSA or the U.S. Department of Transportation</b>.</p></div>
       <div><h3>Data accuracy</h3><p>Data is shown "as is" from public government records and may be out of date, incomplete or wrong. Authority, insurance and safety information can change at any time. Always verify a carrier on the official FMCSA SAFER website before you dispatch, book or pay for a load. We are not responsible for decisions made using this data.</p></div>
       <div><h3>Your responsibility when you call, text or email</h3>
         <ul>
@@ -892,7 +893,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
           <li>If someone asks you not to contact them again, stop and mark them "Not interested".</li>
           <li>Commercial emails must include your physical business address and a clear way to opt out.</li>
         </ul></div>
-      <div><h3>Acceptable use</h3><p>Do not use Carrier Scout to harass anyone, send spam, commit fraud, impersonate a carrier or broker, or resell the data as a list. Do not try to break, overload or copy the service.</p></div>
+      <div><h3>Acceptable use</h3><p>Do not use DispatchWala to harass anyone, send spam, commit fraud, impersonate a carrier or broker, or resell the data as a list. Do not try to break, overload or copy the service.</p></div>
       <div><h3>Your data</h3><p>Your saved leads, notes, follow-ups, brokers and templates are stored only in your own browser. You are responsible for keeping backups. See the <a href="#privacy">Privacy Policy</a>.</p></div>
       <div><h3>No warranty and limit of liability</h3><p>The service is provided "as is" without warranties of any kind. To the maximum extent allowed by law, we are not liable for any lost profits, lost data, fines, claims or damages arising from your use of the service.</p></div>
       <div><h3>Changes</h3><p>We may change the service or these terms at any time. Continued use means you accept the updated terms.</p></div>
@@ -903,7 +904,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <section class="view" id="view-privacy" hidden>
     <div class="card guide">
       <div><h2 class="title">Privacy Policy</h2><p class="lede">Last updated November 4, 2026.</p></div>
-      <div><h3>What we collect</h3><p>Nothing about you is sent to us. Carrier Scout has no accounts and no server of its own. Your saved leads, notes, follow-ups, brokers, templates and settings are saved only in your browser's local storage on your device.</p></div>
+      <div><h3>What we collect</h3><p>Nothing about you is sent to us. DispatchWala has no accounts and no server of its own. Your saved leads, notes, follow-ups, brokers, templates and settings are saved only in your browser's local storage on your device.</p></div>
       <div><h3>Where data comes from</h3><p>When you search, your browser requests public carrier records directly from data.transportation.gov (U.S. Department of Transportation). Their privacy policy applies to those requests. Fonts are loaded from Google Fonts.</p></div>
       <div><h3>Calls, texts and emails</h3><p>Call, WhatsApp, text and email buttons open the app you choose (for example your phone, Google Voice or your email program). Those apps have their own privacy policies.</p></div>
       <div><h3>Deleting your data</h3><p>Clear your browser's site data for this page, or remove carriers from My leads, to delete what is stored. Backup files you download are yours to keep safe.</p></div>
@@ -912,7 +913,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   </section>
 
   <footer class="src">
-    <p><b>Carrier Scout is not affiliated with FMCSA or the U.S. Department of Transportation.</b> <a href="#terms">Terms of Service</a> · <a href="#privacy">Privacy Policy</a> · <a href="#guide">Help</a></p>
+    <p><b>DispatchWala is not affiliated with FMCSA or the U.S. Department of Transportation.</b> <a href="#terms">Terms of Service</a> · <a href="#privacy">Privacy Policy</a> · <a href="#guide">Help</a></p>
     <p>Every carrier in search results has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
     <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data.</p>
     <p>Local times use each state's main time zone; a few states span two zones.</p>
@@ -2475,7 +2476,7 @@ function init() {
     if (!e.target.dataset.armed) { e.target.dataset.armed = "1"; e.target.textContent = "Click again to reset all templates"; return; }
     db.templates = {}; saveDb(); renderScripts(); e.target.textContent = "Reset templates to default"; delete e.target.dataset.armed; toast("Templates reset");
   });
-  $("#backupBtn").addEventListener("click", () => download(`carrier-scout-backup-${localIso(new Date())}.json`, JSON.stringify({ app: "carrier-scout", version: 1, saved: new Date().toISOString(), ...db }, null, 2), "application/json"));
+  $("#backupBtn").addEventListener("click", () => download(`dispatchwala-backup-${localIso(new Date())}.json`, JSON.stringify({ app: "carrier-scout", version: 1, saved: new Date().toISOString(), ...db }, null, 2), "application/json"));
   $("#restoreFile").addEventListener("change", async e => {
     const file = e.target.files[0]; if (!file) return;
     try {
@@ -2483,7 +2484,7 @@ function init() {
       if (!data || typeof data.leads !== "object") throw new Error();
       db = fromSaved(data);
       saveDb(); renderAll(); toast(`Restored ${Object.keys(db.leads).length} carriers from backup`);
-    } catch { toast("That file isn't a Carrier Scout backup."); }
+    } catch { toast("That file isn't a DispatchWala backup."); }
     e.target.value = "";
   });
 

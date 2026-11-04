@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("cs-theme") || "dark"; } catch { document.documentElement.dataset.theme = "dark"; }</script>
 <title>DispatchWala – New MC Carrier Leads & Calling CRM for Truck Dispatchers</title>
@@ -146,7 +146,13 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .nav a svg { width: 18px; height: 18px; flex: none; }
 .nav a:hover { color: var(--ink); background: var(--surface-2); }
 .nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
-.nav a.navhelp { margin-left: auto; }
+.nav a.navhelp { margin-left: 4px; }
+.leadmeter { margin-left: auto; display: grid; gap: 4px; align-content: center; padding: 0 10px; min-width: 150px; font-size: 12px; white-space: nowrap; }
+.leadmeter b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.leadmeter .track { height: 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.leadmeter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .4s; }
+.leadmeter.full i { background: var(--warn); }
+@media (max-width: 760px) { .leadmeter { order: -1; min-width: 120px; padding-left: 0; } }
 .subtabs { display: inline-flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; justify-self: start; }
 .subtabs a { text-decoration: none; font-weight: 600; font-size: 13.5px; color: var(--muted); padding: 7px 14px; border-radius: 8px; }
 .subtabs a[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.1); }
@@ -184,6 +190,20 @@ main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .w-date { width: 160px; } .w-mc { width: 150px; } .w-city { width: 200px; } .w-state { width: 130px; } .w-zip { width: 120px; } .w-event { width: 210px; }
 @media (max-width: 560px) { .w-date, .w-mc, .w-zip, .w-state { width: calc(50% - 6px); } .w-city, .w-event { width: 100%; } }
 .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+/* Sign up / log in */
+body.needauth .nav, body.needauth footer.src p:not(:first-child) { display: none; }
+.authwrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: center; padding-block: 12px 24px; }
+@media (max-width: 860px) { .authwrap { grid-template-columns: minmax(0, 1fr); } }
+.authpitch h2.title { font-size: clamp(28px, 4vw, 42px); letter-spacing: -.03em; }
+.ticks { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; font-weight: 500; }
+.authcard { padding: 20px; display: grid; gap: 14px; }
+.authcard form { display: grid; gap: 12px; }
+.authcard .btn.go { justify-content: center; }
+.authmsg { border-radius: 10px; padding: 10px 12px; font-size: 13.5px; background: var(--bad-soft); color: var(--bad); }
+.authmsg.ok { background: var(--ok-soft); color: var(--ok); }
+.userchip { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.userchip .btn.small { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: inherit; }
+@media (max-width: 560px) { .live { display: none; } }
 .welcome { padding: 16px 18px; display: grid; gap: 10px; border-color: var(--accent); }
 .welcome ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
 .limits { font-size: 12.5px; color: var(--muted); }
@@ -513,6 +533,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </a>
     <div class="bandright">
       <span class="live"><i></i> Live FMCSA data · updated daily</span>
+      <span class="userchip" id="userChip" hidden>👤 <span id="userName"></span> <button class="btn small" type="button" id="logoutBtn">Log out</button></span>
       <button class="themebtn" type="button" id="themeBtn" aria-label="Switch light or dark theme">☀</button>
     </div>
   </div>
@@ -525,6 +546,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <a href="#pipeline" data-view="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>My leads <span class="count" id="navPipe">0</span></a>
     <a href="#customers" data-view="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Customers <span class="count" id="navCust">0</span></a>
     <a href="#scripts" data-view="scripts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Scripts &amp; settings</a>
+    <span class="leadmeter" id="leadMeter" title="Free new leads you can take today. Resets at midnight."><b>0 of 60 leads today</b><span class="track"><i></i></span></span>
     <a href="#guide" data-view="guide" class="navhelp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>Help</a>
   </div>
 </nav>
@@ -879,6 +901,59 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </div>
   </section>
 
+  <!-- ============ SIGN UP / LOG IN ============ -->
+  <section class="view" id="view-auth" hidden>
+    <div class="authwrap">
+      <div class="authpitch">
+        <h2 class="title">Find new truck carriers to call. Free.</h2>
+        <p class="lede">DispatchWala finds brand-new, active MC carriers every day, with the owner's name and phone number, and helps you call, follow up and sign them.</p>
+        <ul class="ticks">
+          <li>✅ New MC authorities every day, checked as active</li>
+          <li>✅ Owner names, phone numbers, insurance and fleet size</li>
+          <li>✅ Calling mode: one carrier at a time, follow-ups set for you</li>
+          <li>✅ Free: 60 new leads every day. Your leads saved on any device</li>
+        </ul>
+      </div>
+      <div class="card authcard">
+        <div class="tabs" role="tablist" aria-label="Account">
+          <button type="button" role="tab" data-authtab="signup" aria-selected="true">Create free account</button>
+          <button type="button" role="tab" data-authtab="login" aria-selected="false">Log in</button>
+        </div>
+        <div class="authmsg" id="authMsg" role="alert" hidden></div>
+
+        <form id="signupForm" data-authpanel="signup" novalidate>
+          <label class="field"><span>Your name</span><input id="suName" autocomplete="name" placeholder="Ali Khan" required></label>
+          <label class="field"><span>WhatsApp number</span><input id="suPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"></label>
+          <label class="field"><span>Email</span><input id="suEmail" type="email" autocomplete="email" placeholder="you@email.com" required></label>
+          <label class="field"><span>Password (6+ characters)</span><input id="suPass" type="password" autocomplete="new-password" minlength="6" required></label>
+          <label class="toggle"><input type="checkbox" id="suTerms"> I agree to the <a href="#terms">Terms</a> and <a href="#privacy">Privacy Policy</a></label>
+          <button class="btn primary go" type="submit">Create free account</button>
+          <p class="note">Already have an account? <button type="button" class="btn link" data-authtab="login">Log in</button></p>
+        </form>
+
+        <form id="loginForm" data-authpanel="login" novalidate hidden>
+          <label class="field"><span>Email</span><input id="liEmail" type="email" autocomplete="email" required></label>
+          <label class="field"><span>Password</span><input id="liPass" type="password" autocomplete="current-password" required></label>
+          <button class="btn primary go" type="submit">Log in</button>
+          <p class="note"><button type="button" class="btn link" id="forgotLink">Forgot password?</button> · New here? <button type="button" class="btn link" data-authtab="signup">Create free account</button></p>
+        </form>
+
+        <form id="forgotForm" data-authpanel="forgot" novalidate hidden>
+          <p class="note">Enter your email and we'll send you a link to set a new password.</p>
+          <label class="field"><span>Email</span><input id="fpEmail" type="email" autocomplete="email" required></label>
+          <button class="btn primary go" type="submit">Send reset link</button>
+          <p class="note"><button type="button" class="btn link" data-backtologin>Back to log in</button></p>
+        </form>
+
+        <form id="newPassForm" data-authpanel="newpass" novalidate hidden>
+          <p class="note">Choose a new password for your account.</p>
+          <label class="field"><span>New password (6+ characters)</span><input id="npPass" type="password" autocomplete="new-password" minlength="6" required></label>
+          <button class="btn primary go" type="submit">Save new password</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ TERMS ============ -->
   <section class="view" id="view-terms" hidden>
     <div class="card guide">
@@ -904,7 +979,8 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <section class="view" id="view-privacy" hidden>
     <div class="card guide">
       <div><h2 class="title">Privacy Policy</h2><p class="lede">Last updated November 4, 2026.</p></div>
-      <div><h3>What we collect</h3><p>Nothing about you is sent to us. DispatchWala has no accounts and no server of its own. Your saved leads, notes, follow-ups, brokers, templates and settings are saved only in your browser's local storage on your device.</p></div>
+      <div><h3>What we collect</h3><p>When you create an account we store your name, email, WhatsApp number and password (encrypted by our login provider, Supabase), plus your saved leads, notes, follow-ups, brokers, templates, settings and how many searches and exports you used each day. We use this only to run your account and its daily limits. We don't sell your data. A copy of your saved leads is also kept in your browser so the app works fast.</p></div>
+      <div><h3>Deleting your account</h3><p>To delete your account and everything stored with it, contact us from your account email and we will remove it.</p></div>
       <div><h3>Where data comes from</h3><p>When you search, your browser requests public carrier records directly from data.transportation.gov (U.S. Department of Transportation). Their privacy policy applies to those requests. Fonts are loaded from Google Fonts.</p></div>
       <div><h3>Calls, texts and emails</h3><p>Call, WhatsApp, text and email buttons open the app you choose (for example your phone, Google Voice or your email program). Those apps have their own privacy policies.</p></div>
       <div><h3>Deleting your data</h3><p>Clear your browser's site data for this page, or remove carriers from My leads, to delete what is stored. Backup files you download are yours to keep safe.</p></div>
@@ -945,7 +1021,14 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 </dialog>
 <div class="toast" id="toast" hidden></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
+/* Login and cloud sync. Paste your Supabase project URL and anon/publishable key here; leave empty to run without accounts. */
+const SUPABASE_URL = "";
+const SUPABASE_KEY = "";
+const sb = SUPABASE_URL && SUPABASE_KEY && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+let session = null;
+
 /* ===================== FMCSA data ===================== */
 const API = "https://data.transportation.gov/resource/";
 const DS = { census: "az4n-8mr2", motusHist: "yu5v-wbh6", motusCarrier: "inys-ebih", legacyCarrier: "6eyk-hxee", motusInsur: "c5y8-a4uz", legacyInsur: "qh9u-swkp", motusBoc3: "6snj-ed7q", legacyBoc3: "2emp-mxtb" };
@@ -1149,7 +1232,8 @@ function loadDb() {
 }
 function saveDb() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
-  catch { toast("Couldn't save: this browser's storage is full or blocked. Download a backup."); }
+  catch { if (!session) toast("Couldn't save: this browser's storage is full or blocked. Download a backup."); }
+  scheduleCloudSave();
 }
 const template = k => ({ ...DEFAULT_TEMPLATES[k], ...(db.templates[k] || {}) });
 const leadOf = dot => db.leads[dot] || null;
@@ -1495,12 +1579,11 @@ async function run(append = false, opts = {}) {
   const err = $("#error");
   if (problem) { err.textContent = problem; err.hidden = false; return; }
   if (!append && !opts.auto) {
-    const u = usage();
-    if (u.searches >= LIMITS.searchesPerDay) {
+    if (!searchesLeft()) {
       err.textContent = `You've used today's ${LIMITS.searchesPerDay} free searches. Your searches reset at midnight, so come back tomorrow! Your saved leads and Today list still work.`;
       err.hidden = false; return;
     }
-    u.searches++; saveUsage(u); renderLimits();
+    countUsage("search", 1);
   }
   err.hidden = true;
   if (state.abort) state.abort.abort();
@@ -1877,20 +1960,66 @@ function fillReady(dots) {
 }
 
 /* ===================== Daily limits ===================== */
-/* Free daily allowance so dispatchers come back each day. Counted in this browser and reset at midnight. Change the numbers here. */
-const LIMITS = { searchesPerDay: 60, exportsPerDay: 60 };
+/* Free daily allowance so dispatchers come back each day: a number of new leads per day (save, first call, export or
+   copied phone each take one, and the same carrier only counts once a day), plus a generous search cap. Change the numbers here. */
+const LIMITS = { searchesPerDay: 150, leadsPerDay: 60 };
 const USAGE_KEY = "cs-usage";
 function usage() {
   const today = localIso(new Date());
   let u = null;
   try { u = JSON.parse(localStorage.getItem(USAGE_KEY) || "null"); } catch {}
-  return u && u.day === today ? u : { day: today, searches: 0, exported: 0 };
+  if (!u || u.day !== today) u = { day: today, searches: 0, exported: 0, taken: [] };
+  if (!Array.isArray(u.taken)) u.taken = [];
+  return u;
+}
+/* A carrier is free if it's already saved or was already taken today; otherwise it uses one of today's leads. */
+const isTaken = dot => !!stageOf(dot) || usage().taken.includes(dot);
+function takeLeads(dots) {
+  const fresh = [...new Set(dots)].filter(d => !isTaken(d));
+  const allowed = fresh.slice(0, leadsLeft());
+  if (allowed.length) {
+    const u = usage(); u.taken.push(...allowed); saveUsage(u);
+    countUsage("export", allowed.length);
+  }
+  return { allowed: new Set(allowed), blocked: fresh.length - allowed.length };
+}
+const limitMsg = () => `You've taken today's ${LIMITS.leadsPerDay} free leads. Come back tomorrow for ${LIMITS.leadsPerDay} more! Your saved leads still work.`;
+/* Use before anything that would create a new saved lead. Returns false (and says why) when today's leads are used up. */
+function allowNewLead(dot) {
+  if (isTaken(dot)) return true;
+  if (takeLeads([dot]).allowed.has(dot)) return true;
+  toast(limitMsg());
+  return false;
 }
 function saveUsage(u) { try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch {} }
-const searchesLeft = () => Math.max(0, LIMITS.searchesPerDay - usage().searches);
-const exportsLeft = () => Math.max(0, LIMITS.exportsPerDay - usage().exported);
+/* Signed in: counts live on the account (so clearing the browser doesn't reset them). Not signed in: counted in this browser. */
+let cloudUsage = null;
+const usageNow = () => (session ? (cloudUsage || { searches: 0, exported: 0 }) : usage());
+async function countUsage(kind, n = 1) {
+  if (session && sb) {
+    const cur = usageNow();
+    cloudUsage = { searches: cur.searches + (kind === "search" ? n : 0), exported: cur.exported + (kind === "export" ? n : 0) };
+    renderLimits();
+    const { data, error } = await sb.rpc("bump_usage", { kind, amount: n });
+    if (!error && data && data[0]) cloudUsage = data[0];
+  } else {
+    const u = usage();
+    if (kind === "search") u.searches += n; else u.exported += n;
+    saveUsage(u);
+  }
+  renderLimits();
+}
+const searchesLeft = () => Math.max(0, LIMITS.searchesPerDay - usageNow().searches);
+const leadsLeft = () => Math.max(0, LIMITS.leadsPerDay - usageNow().exported);
 function renderLimits() {
-  $("#limitsLine").innerHTML = `Today: <b>${searchesLeft()}</b> of ${LIMITS.searchesPerDay} searches left · <b>${exportsLeft()}</b> of ${LIMITS.exportsPerDay} exports left · resets at midnight`;
+  const used = Math.min(LIMITS.leadsPerDay, usageNow().exported), pct = Math.round(used / LIMITS.leadsPerDay * 100);
+  $("#limitsLine").innerHTML = `🎯 <b>${used} of ${LIMITS.leadsPerDay}</b> free leads used today · ${searchesLeft()} searches left · new leads every day at midnight`;
+  const m = $("#leadMeter");
+  if (m) {
+    m.querySelector("b").textContent = `${used} of ${LIMITS.leadsPerDay} leads today`;
+    m.querySelector("i").style.width = pct + "%";
+    m.classList.toggle("full", used >= LIMITS.leadsPerDay);
+  }
 }
 
 /* ===================== Daily target ===================== */
@@ -2225,9 +2354,10 @@ function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-s
 
 /* ===================== navigation ===================== */
 const BASE_TITLE = document.title;
-const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy"];
+const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy", "auth"];
 function showView(v) {
-  if (!VIEWS.includes(v)) v = "find";
+  if (!VIEWS.includes(v) || v === "auth") v = "find";
+  if (sb && !session && !["terms", "privacy"].includes(v)) v = "auth";
   state.view = v;
   VIEWS.forEach(k => ($("#view-" + k).hidden = k !== v));
   const navKey = v === "brokers" ? "customers" : v;
@@ -2294,6 +2424,7 @@ function resetFilters() {
 }
 
 function init() {
+  if (sb) document.body.classList.add("needauth");
   loadDb();
   $("#state").innerHTML = `<option value="">Any state</option>` + STATES.map(s => `<option>${s}</option>`).join("");
   $("#equipment").innerHTML = Object.entries(EQUIP).map(([k, e]) => `<button type="button" class="chip" data-eq="${k}" aria-pressed="false">${e.label}</button>`).join("");
@@ -2365,6 +2496,7 @@ function init() {
     const box = e.target.closest("[data-sel]");
     if (box) { box.checked ? state.selected.add(+box.dataset.sel) : state.selected.delete(+box.dataset.sel); renderBulk(); return; }
     const sel = e.target.closest("[data-stage]"); if (!sel || !sel.value) return;
+    if (!allowNewLead(+sel.dataset.stage)) { sel.value = ""; return; }
     setStage(+sel.dataset.stage, sel.value);
     toast(`${STAGE_LABEL[sel.value]}: saved to My leads`);
     renderAll();
@@ -2375,23 +2507,23 @@ function init() {
     renderFind();
   });
   $("#bulkAdd").addEventListener("click", () => {
+    const unsaved = [...state.selected].filter(d => !stageOf(d));
+    const { blocked } = takeLeads(unsaved);
     let added = 0;
-    for (const dot of state.selected) if (!stageOf(dot)) { setStage(dot, "new", true); added++; }
+    for (const dot of unsaved) if (isTaken(dot)) { setStage(dot, "new", true); added++; }
     saveDb();
-    const skipped = state.selected.size - added;
     state.selected.clear();
-    toast(`Saved ${added} leads${skipped ? ` (${skipped} were already in it)` : ""}`);
+    toast(blocked ? `Saved ${added} leads. ${blocked} not saved: ${limitMsg()}` : `Saved ${added} leads`);
     renderAll();
   });
   $("#bulkPhones").addEventListener("click", () => {
-    const lines = state.results.filter(x => state.selected.has(x.dot) && x.c.phone)
-      .map(x => `${fmtPhone(x.c.phone)}\t${x.c.people[0] || ""}\t${x.c.name}`);
-    if (!lines.length) { toast("None of the selected carriers has a phone number."); return; }
-    const left = exportsLeft();
-    if (!left) { toast(`Today's ${LIMITS.exportsPerDay} free exports are used up. More tomorrow!`); return; }
-    const take = lines.slice(0, left);
-    const u = usage(); u.exported += take.length; saveUsage(u); renderLimits();
-    copyText(take.join("\n"), take.length < lines.length ? `Copied ${take.length} phone numbers (daily limit reached)` : `Copied ${take.length} phone numbers`);
+    const picked = state.results.filter(x => state.selected.has(x.dot) && x.c.phone);
+    if (!picked.length) { toast("None of the selected carriers has a phone number."); return; }
+    const { blocked } = takeLeads(picked.map(x => x.dot));
+    const ok = picked.filter(x => isTaken(x.dot));
+    if (!ok.length) { toast(limitMsg()); return; }
+    copyText(ok.map(x => `${fmtPhone(x.c.phone)}\t${x.c.people[0] || ""}\t${x.c.name}`).join("\n"),
+      blocked ? `Copied ${ok.length} phone numbers. Daily lead limit reached for the rest.` : `Copied ${ok.length} phone numbers`);
   });
   $("#bulkClear").addEventListener("click", () => { state.selected.clear(); renderFind(); });
 
@@ -2434,6 +2566,7 @@ function init() {
     const c = e.target.closest("[data-copy]"); if (c) { copyText(c.dataset.copy, "Copied " + c.dataset.copy); return; }
     const ct = e.target.closest("[data-copy-tpl]");
     if (ct) { const t = template(ct.dataset.copyTpl), car = carrierFor(dot); copyText(`Subject: ${fillTemplate(t.subject, car)}\n\n${fillTemplate(t.body, car)}`, "Email copied"); return; }
+    if (e.target.closest("[data-call], [data-setstage], [data-follow]") && !allowNewLead(dot)) return;
     const call = e.target.closest("[data-call]");
     if (call) { const f = logCall(dot, call.dataset.call); toast(f ? `Logged. Next follow-up ${fmtWhen(f)}` : "Logged"); renderAll(); return; }
     const st = e.target.closest("[data-setstage]");
@@ -2453,7 +2586,7 @@ function init() {
   d.addEventListener("keydown", e => { if (e.target.id === "noteInput" && e.key === "Enter") { e.preventDefault(); addNote(+d.dataset.dot); } });
   d.addEventListener("change", e => {
     const dot = +d.dataset.dot;
-    if (e.target.id === "followAt" && e.target.value) { setFollowUp(dot, new Date(e.target.value)); toast("Follow-up set"); renderAll(); return; }
+    if (e.target.id === "followAt" && e.target.value) { if (!allowNewLead(dot)) return; setFollowUp(dot, new Date(e.target.value)); toast("Follow-up set"); renderAll(); return; }
     const cuKey = e.target.dataset.cu, chk = e.target.dataset.check;
     if (cuKey || chk) {
       const l = ensureLead(dot); l.customer = l.customer || {};
@@ -2492,14 +2625,14 @@ function init() {
   $("#exportCsv").addEventListener("click", () => {
     const all = visibleResults();
     if (!all.length) { toast("Nothing to export yet. Run a search first."); return; }
-    const left = exportsLeft();
-    if (!left) { toast(`Today's ${LIMITS.exportsPerDay} free exports are used up. More tomorrow!`); return; }
-    const list = all.slice(0, left);
+    // Saved leads and leads already taken today export free; new carriers use today's leads, top of the list first.
+    const { blocked } = takeLeads(all.map(x => x.dot));
+    const list = all.filter(x => isTaken(x.dot));
+    if (!list.length) { toast(limitMsg()); return; }
     download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(list), "text/csv;charset=utf-8");
-    const u = usage(); u.exported += list.length; saveUsage(u); renderLimits();
-    toast(list.length < all.length
-      ? `Exported your top ${list.length} carriers (daily limit). More tomorrow!`
-      : `Exported ${list.length} carriers (opens in Excel). ${exportsLeft()} exports left today.`);
+    toast(blocked
+      ? `Exported ${list.length} carriers. Daily lead limit reached for the other ${blocked}. More tomorrow!`
+      : `Exported ${list.length} carriers (opens in Excel). ${leadsLeft()} free leads left today.`);
   });
 
   // Call buttons: copy the number on every click; "Just copy" mode stays on the page
@@ -2550,6 +2683,7 @@ function init() {
     const o = e.target.closest("[data-cmcall]");
     if (o) {
       const dot = cm.queue[cm.i], note = $("#cmNote")?.value.trim();
+      if (!allowNewLead(dot)) return;
       if (note) logActivity(dot, "note", note);
       const f = logCall(dot, o.dataset.cmcall);
       cm.made++; cm.i++;
@@ -2614,13 +2748,142 @@ function init() {
     syncThemeBtn();
   });
   checkReminders();
-  backfillCarriers();
   renderLimits();
+  if (sb) { wireAuth(); initAuth(); return; }
+  backfillCarriers();
   run(false, { auto: true });
 }
+/* ===================== Accounts (Supabase) ===================== */
+/* Signed-in users get their saved leads, notes and settings synced to their account, so they work on any device. */
+let cloudTimer = null, cloudFailedOnce = false;
+function scheduleCloudSave() {
+  if (!sb || !session) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(cloudSaveNow, 1500);
+}
+async function cloudSaveNow() {
+  if (!sb || !session) return;
+  clearTimeout(cloudTimer);
+  const { error } = await sb.from("user_data").upsert({ user_id: session.user.id, data: db, updated_at: new Date().toISOString() });
+  if (error && !cloudFailedOnce) { cloudFailedOnce = true; toast("Couldn't sync to your account right now. It will retry on your next change."); }
+  if (!error) cloudFailedOnce = false;
+}
+const karachiDay = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+
+async function onLoggedIn() {
+  document.body.classList.remove("needauth");
+  const meta = session.user.user_metadata || {};
+  $("#userName").textContent = meta.full_name || session.user.email;
+  $("#userChip").hidden = false;
+  setStatus("Loading your saved leads…");
+  const [{ data: row, error }, { data: use }] = await Promise.all([
+    sb.from("user_data").select("data").eq("user_id", session.user.id).maybeSingle(),
+    sb.from("usage").select("searches,exported").eq("user_id", session.user.id).eq("day", karachiDay()).maybeSingle()
+  ]);
+  setStatus("");
+  cloudUsage = use || { searches: 0, exported: 0 };
+  if (error) toast("Couldn't load your saved leads. Check your internet and refresh.");
+  else if (row && row.data && Object.keys(row.data.leads || {}).length + Object.keys(row.data.me || {}).length) {
+    db = fromSaved(row.data);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch {}
+  } else {
+    // First sign-in: keep anything already saved in this browser and fill in the user's details.
+    db.me = { ...db.me, name: db.me?.name || meta.full_name || "", phone: db.me?.phone || meta.phone || "", email: db.me?.email || session.user.email };
+    await cloudSaveNow();
+  }
+  renderLimits();
+  showView(location.hash.slice(1) || "find");
+  backfillCarriers();
+  if (!state.results.length) run(false, { auto: true });
+}
+function onLoggedOut() {
+  document.body.classList.add("needauth");
+  $("#userChip").hidden = true;
+  // Clear this browser's copy so the next person on a shared computer can't see it. It stays safe in the account.
+  db = { carriers: {}, leads: {}, me: {}, templates: {}, brokers: {} };
+  try { localStorage.removeItem(STORE_KEY); } catch {}
+  state.results = []; cloudUsage = null;
+  showAuthPanel("signup");
+  showView("auth");
+}
+function initAuth() {
+  sb.auth.onAuthStateChange((event, s) => {
+    if (event === "PASSWORD_RECOVERY") { session = s; showView("auth"); showAuthPanel("newpass"); return; }
+    const had = !!session;
+    session = s;
+    if (s && !had) setTimeout(onLoggedIn, 0);
+    else if (!s && (had || event === "INITIAL_SESSION")) onLoggedOut();
+  });
+}
+function showAuthPanel(which) {
+  document.querySelectorAll("[data-authpanel]").forEach(p => (p.hidden = p.dataset.authpanel !== which));
+  document.querySelectorAll("[data-authtab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.authtab === which)));
+  $("#authMsg").hidden = true;
+}
+function authMessage(text, ok) { const m = $("#authMsg"); m.textContent = text; m.className = ok ? "authmsg ok" : "authmsg"; m.hidden = false; }
+function friendlyAuthError(e) {
+  const m = (e?.message || "").toLowerCase();
+  if (m.includes("invalid login")) return "Email or password is wrong. Try again, or use \"Forgot password?\".";
+  if (m.includes("already registered") || m.includes("already been registered")) return "This email already has an account. Log in instead.";
+  if (m.includes("password") && m.includes("6")) return "Password must be at least 6 characters.";
+  if (m.includes("email not confirmed")) return "Please confirm your email first. Check your inbox (and spam folder).";
+  if (m.includes("rate limit") || m.includes("too many")) return "Too many tries. Please wait a minute and try again.";
+  if (m.includes("valid email") || m.includes("invalid email")) return "Please enter a valid email address.";
+  return e?.message || "Something went wrong. Please try again.";
+}
+const siteUrl = () => location.origin + location.pathname;
+function wireAuth() {
+  document.querySelectorAll("[data-authtab]").forEach(b => b.addEventListener("click", () => showAuthPanel(b.dataset.authtab)));
+  $("#forgotLink").addEventListener("click", () => showAuthPanel("forgot"));
+  document.querySelectorAll("[data-backtologin]").forEach(b => b.addEventListener("click", () => showAuthPanel("login")));
+  const busy = (form, on) => form.querySelectorAll("button, input").forEach(el => (el.disabled = on));
+
+  $("#signupForm").addEventListener("submit", async e => {
+    e.preventDefault(); const f = e.currentTarget;
+    const full_name = $("#suName").value.trim(), phone = $("#suPhone").value.trim(), email = $("#suEmail").value.trim(), password = $("#suPass").value;
+    if (!full_name) return authMessage("Please enter your name.");
+    if (password.length < 6) return authMessage("Password must be at least 6 characters.");
+    if (!$("#suTerms").checked) return authMessage("Please agree to the Terms of Service and Privacy Policy.");
+    busy(f, true);
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name, phone }, emailRedirectTo: siteUrl() } });
+    busy(f, false);
+    if (error) return authMessage(friendlyAuthError(error));
+    if (!data.session) authMessage("Account created! Check your email to confirm it, then log in.", true);
+  });
+  $("#loginForm").addEventListener("submit", async e => {
+    e.preventDefault(); const f = e.currentTarget;
+    busy(f, true);
+    const { error } = await sb.auth.signInWithPassword({ email: $("#liEmail").value.trim(), password: $("#liPass").value });
+    busy(f, false);
+    if (error) authMessage(friendlyAuthError(error));
+  });
+  $("#forgotForm").addEventListener("submit", async e => {
+    e.preventDefault(); const f = e.currentTarget;
+    busy(f, true);
+    const { error } = await sb.auth.resetPasswordForEmail($("#fpEmail").value.trim(), { redirectTo: siteUrl() });
+    busy(f, false);
+    if (error) authMessage(friendlyAuthError(error));
+    else authMessage("If that email has an account, a reset link is on its way. Check your inbox and spam folder.", true);
+  });
+  $("#newPassForm").addEventListener("submit", async e => {
+    e.preventDefault(); const f = e.currentTarget;
+    const password = $("#npPass").value;
+    if (password.length < 6) return authMessage("Password must be at least 6 characters.");
+    busy(f, true);
+    const { error } = await sb.auth.updateUser({ password });
+    busy(f, false);
+    if (error) return authMessage(friendlyAuthError(error));
+    toast("Password updated. You're logged in.");
+    history.replaceState(null, "", siteUrl() + "#find");
+    onLoggedIn();
+  });
+  $("#logoutBtn").addEventListener("click", async () => { await cloudSaveNow(); await sb.auth.signOut(); toast("Logged out"); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && cloudTimer) cloudSaveNow(); });
+}
+
 function addNote(dot) {
   const input = $("#noteInput"), text = input.value.trim();
-  if (!text) return;
+  if (!text || !allowNewLead(dot)) return;
   logActivity(dot, "note", text); saveDb(); input.value = ""; renderAll();
   setTimeout(() => $("#noteInput")?.focus(), 0);
 }

@@ -11,7 +11,7 @@
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Carrier Scout – New MC Carrier Leads for Truck Dispatchers">
-<meta property="og:description" content="Find new, active MC carriers with owner names and phone numbers. Updated daily from FMCSA. Built-in calling mode, follow-ups and pipeline.">
+<meta property="og:description" content="Find new, active MC carriers with owner names and phone numbers. Updated daily from FMCSA. Built-in calling mode, follow-ups and saved leads.">
 <meta property="og:url" content="https://ars001.github.io/TruckingLeadgen/">
 <meta name="twitter:card" content="summary">
 <link rel="canonical" href="https://ars001.github.io/TruckingLeadgen/">
@@ -36,7 +36,7 @@
         { "@type": "Question", "name": "Does it only show active carriers?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every carrier shown has active MC authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out." } },
         { "@type": "Question", "name": "Does it show owner names and phone numbers?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It shows the company officers listed on the carrier's MCS-150, plus the phone number and email on file with FMCSA." } },
         { "@type": "Question", "name": "Is Carrier Scout affiliated with FMCSA?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is an independent tool that uses FMCSA's public open data and is not affiliated with FMCSA or the U.S. Department of Transportation." } },
-        { "@type": "Question", "name": "Where is my pipeline and notes data saved?", "acceptedAnswer": { "@type": "Answer", "text": "Only in your own browser on your device. Nothing is sent to a Carrier Scout server. Use Download backup to keep a copy." } }
+        { "@type": "Question", "name": "Where are my saved leads and notes stored?", "acceptedAnswer": { "@type": "Answer", "text": "Only in your own browser on your device. Nothing is sent to a Carrier Scout server. Use Download backup to keep a copy." } }
       ]
     }
   ]
@@ -183,6 +183,31 @@ main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .w-date { width: 160px; } .w-mc { width: 150px; } .w-city { width: 200px; } .w-state { width: 130px; } .w-zip { width: 120px; } .w-event { width: 210px; }
 @media (max-width: 560px) { .w-date, .w-mc, .w-zip, .w-state { width: calc(50% - 6px); } .w-city, .w-event { width: 100%; } }
 .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.welcome { padding: 16px 18px; display: grid; gap: 10px; border-color: var(--accent); }
+.welcome ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.limits { font-size: 12.5px; color: var(--muted); }
+.limits b { color: var(--ink); font-variant-numeric: tabular-nums; }
+/* Toolbar: on desktop everything sits in one row; on phones the extras fold behind "Options" */
+.tools-extra { display: contents; }
+.tools-toggle { display: none; }
+#startCallsFind { order: 10; }
+@media (max-width: 760px) {
+  #view-find > div:first-child .lede { display: none; }
+  #view-find h2.title { font-size: 26px; }
+  .clocks { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .clocks .sub { display: none; }
+  .clock { flex: none; padding: 5px 10px; font-size: 12.5px; }
+  main.wrap { padding-block: 12px 28px; gap: 12px; }
+  .view { gap: 12px; }
+  .tools-toggle { display: inline-flex; }
+  #startCallsFind { order: 0; flex: 1 1 auto; justify-content: center; font-size: 16px; padding-block: 12px; }
+  .tools-extra { display: none; width: 100%; flex-wrap: wrap; gap: 8px; }
+  .tools-extra.open { display: flex; }
+  .search { flex-basis: 100%; }
+}
+.customdates { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; width: 100%; }
+.datesum { font-weight: 600; font-size: 15px; padding: 8px 0; }
+.datesum span { color: var(--muted); font-weight: 500; font-size: 13px; }
 .buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 .btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 9px 16px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: border-color .15s, background .15s, transform .1s; }
@@ -496,7 +521,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <div class="wrap">
     <a href="#find" data-view="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Find carriers</a>
     <a href="#today" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Today <span class="count" id="navToday">0</span></a>
-    <a href="#pipeline" data-view="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Pipeline <span class="count" id="navPipe">0</span></a>
+    <a href="#pipeline" data-view="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>My leads <span class="count" id="navPipe">0</span></a>
     <a href="#customers" data-view="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Customers <span class="count" id="navCust">0</span></a>
     <a href="#scripts" data-view="scripts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Scripts &amp; settings</a>
     <a href="#guide" data-view="guide" class="navhelp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>Help</a>
@@ -512,6 +537,18 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <p class="lede">New MC authorities with owner names and phone numbers. Every carrier here is checked as active.</p>
     </div>
     <div class="clocks" aria-label="Time in the US now"></div>
+    <div class="card welcome" id="welcome" hidden>
+      <b>👋 Welcome! Start in 3 easy steps:</b>
+      <ol>
+        <li>Press <b>Find carriers</b> (or a quick pick like "Yesterday + today").</li>
+        <li>Press <b>▶ Start calling</b>. You'll see one carrier at a time with a big Call button.</li>
+        <li>After each call, <b>tap what happened</b>. The app saves it and sets your next call.</li>
+      </ol>
+      <div class="buttons">
+        <button class="btn primary" type="button" id="welcomeOk">Got it</button>
+        <a class="btn" href="#scripts">Add my name &amp; calling app</a>
+      </div>
+    </div>
     <form class="card searchcard" id="search" novalidate>
       <div class="tabs" role="tablist" aria-label="Search by">
         <button type="button" role="tab" data-mode="date" aria-selected="true">New authority</button>
@@ -520,15 +557,18 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       </div>
       <div class="searchrow">
         <div class="modefields" data-for="date">
-          <label class="field w-date"><span>From</span><input type="date" id="dateFrom"></label>
-          <label class="field w-date"><span>To</span><input type="date" id="dateTo"></label>
-          <label class="field w-event"><span>Authority</span>
-            <select id="event">
-              <option value="granted">Newly granted</option>
-              <option value="reinstated">Reinstated</option>
-              <option value="both">Granted or reinstated</option>
-            </select>
-          </label>
+          <div class="datesum" id="dateSum"></div>
+          <div class="customdates" id="customDates" hidden>
+            <label class="field w-date"><span>From</span><input type="date" id="dateFrom"></label>
+            <label class="field w-date"><span>To</span><input type="date" id="dateTo"></label>
+            <label class="field w-event"><span>Authority</span>
+              <select id="event">
+                <option value="granted">Newly granted</option>
+                <option value="reinstated">Reinstated</option>
+                <option value="both">Granted or reinstated</option>
+              </select>
+            </label>
+          </div>
         </div>
         <div class="modefields" data-for="location" hidden>
           <label class="field w-city"><span>City</span><input id="city" placeholder="e.g. Dallas" autocomplete="off"></label>
@@ -551,6 +591,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <button type="button" class="btn small" data-days="2">Last 3 days</button>
         <button type="button" class="btn small" data-days="6">Last 7 days</button>
         <button type="button" class="btn small" data-days="29">Last 30 days</button>
+        <button type="button" class="btn link" id="customBtn" aria-expanded="false" aria-controls="customDates">📅 Custom dates</button>
       </div>
       <p class="note" data-for="location" hidden>Shows the newest registrations first. Pick a state or type at least 3 ZIP digits.</p>
       <p class="note" data-for="mc" hidden>Up to 5,000 MC numbers per search.</p>
@@ -593,6 +634,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       </div>
     </form>
 
+    <div class="limits" id="limitsLine"></div>
     <div class="summary">
       <div class="count" id="count">0<small>carriers</small></div>
       <span class="excluded" id="excluded"></span>
@@ -602,23 +644,26 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
         <input id="q" type="search" placeholder="Filter by name, owner, phone, city, MC…" autocomplete="off" aria-label="Filter results">
       </div>
-      <select id="sort" aria-label="Sort">
-        <option value="hot" selected>🔥 Hot leads first</option>
-        <option value="recent">Newest first</option>
-        <option value="calltime">Good time to call now</option>
-        <option value="trucks">Most trucks</option>
-        <option value="name">Name A–Z</option>
-        <option value="state">State</option>
-      </select>
-      <button class="btn" id="callNowBtn" type="button" aria-pressed="false">🕗 Good time to call only</button>
-      <button class="btn" id="hidePipeBtn" type="button" aria-pressed="false">🙈 Hide ones in my pipeline</button>
-      <button class="btn" id="selectBtn" type="button" aria-pressed="false">☑ Select</button>
-      <button class="btn" id="exportCsv" type="button">⬇ Export</button>
       <button class="btn primary" id="startCallsFind" type="button">▶ Start calling</button>
+      <button class="btn tools-toggle" id="toolsBtn" type="button" aria-expanded="false" aria-controls="toolsExtra">⚙ Options</button>
+      <div class="tools-extra" id="toolsExtra">
+        <select id="sort" aria-label="Sort">
+          <option value="hot" selected>🔥 Hot leads first</option>
+          <option value="recent">Newest first</option>
+          <option value="calltime">Good time to call now</option>
+          <option value="trucks">Most trucks</option>
+          <option value="name">Name A–Z</option>
+          <option value="state">State</option>
+        </select>
+        <button class="btn" id="callNowBtn" type="button" aria-pressed="false">🕗 Good time to call only</button>
+        <button class="btn" id="hidePipeBtn" type="button" aria-pressed="false">🙈 Hide my saved leads</button>
+        <button class="btn" id="selectBtn" type="button" aria-pressed="false">☑ Select</button>
+        <button class="btn" id="exportCsv" type="button">⬇ Export</button>
+      </div>
     </div>
     <div class="bulkbar" id="bulkbar" hidden>
       <span><b id="selCount">0</b> selected</span>
-      <button class="btn primary" type="button" id="bulkAdd">Add to pipeline</button>
+      <button class="btn primary" type="button" id="bulkAdd">Save leads</button>
       <button class="btn" type="button" id="bulkPhones">Copy phone numbers</button>
       <button class="btn" type="button" id="bulkClear">Clear selection</button>
     </div>
@@ -628,7 +673,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <table>
         <thead>
           <tr>
-            <th class="c-sel"><input type="checkbox" id="selAll" aria-label="Select all on this page"></th><th>Pipeline</th><th>Carrier</th><th>MC status</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
+            <th class="c-sel"><input type="checkbox" id="selAll" aria-label="Select all on this page"></th><th>Lead</th><th>Carrier</th><th>MC status</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
             <th>Fleet</th><th id="dateHead">Authority date</th><th>Equipment</th>
           </tr>
         </thead>
@@ -698,13 +743,13 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <!-- ============ PIPELINE ============ -->
   <section class="view" id="view-pipeline" hidden>
     <div>
-      <h2 class="title">Pipeline</h2>
+      <h2 class="title">My leads</h2>
       <p class="lede">Drag a carrier to move it to the next stage, or click it to log a call, add notes and set a follow-up.</p>
     </div>
     <div class="toolbar">
       <div class="search">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
-        <input id="pq" type="search" placeholder="Filter the pipeline…" autocomplete="off" aria-label="Filter pipeline">
+        <input id="pq" type="search" placeholder="Filter my leads…" autocomplete="off" aria-label="Filter my leads">
       </div>
     </div>
     <div class="board" id="board"></div>
@@ -747,7 +792,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <div class="twocol" id="templateEditors"></div>
     <div class="card panel">
       <h3>Backup</h3>
-      <p class="note">Your pipeline, notes, follow-ups, customers and templates live in this browser. Download a backup now and then, and restore it on another computer or after clearing the browser.</p>
+      <p class="note">Your saved leads, notes, follow-ups, customers and templates live in this browser. Download a backup now and then, and restore it on another computer or after clearing the browser.</p>
       <div class="buttons">
         <button class="btn" type="button" id="backupBtn">Download backup</button>
         <label class="btn" for="restoreFile">Restore from backup</label>
@@ -784,7 +829,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
           <div><b>Does it show owner names and phone numbers?</b>Yes: the company officers listed on the carrier's MCS-150, plus the phone and email on file with FMCSA.</div>
           <div><b>The Call button does nothing.</b>On a computer, choose your calling app under "Call with" (Google Voice, Teams, Skype, Zoom Phone, or Just copy the number). Every Call click also copies the number.</div>
           <div><b>Is Carrier Scout affiliated with FMCSA?</b>No. It's an independent tool that uses FMCSA's public open data.</div>
-          <div><b>Where is my pipeline and notes data saved?</b>Only in your own browser. Use Download backup under Scripts &amp; settings to keep a copy.</div>
+          <div><b>Where are my saved leads and notes stored?</b>Only in your own browser. Use Download backup under Scripts &amp; settings to keep a copy.</div>
         </div>
       </div>
 
@@ -826,7 +871,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <ul>
           <li>Start with your <a href="#today">Today</a> list: overdue follow-ups first, then due today. Call only between 8 AM and 9 PM in the carrier's local time.</li>
           <li>Block 2 hours for new calls. Aim for 40–60 dials; log every outcome.</li>
-          <li>Move carriers through the <a href="#pipeline">Pipeline</a> as soon as something changes.</li>
+          <li>Move carriers to the next stage in <a href="#pipeline">My leads</a> as soon as something changes.</li>
           <li>End the day by setting follow-ups for everyone you talked to.</li>
         </ul>
       </div>
@@ -848,7 +893,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
           <li>Commercial emails must include your physical business address and a clear way to opt out.</li>
         </ul></div>
       <div><h3>Acceptable use</h3><p>Do not use Carrier Scout to harass anyone, send spam, commit fraud, impersonate a carrier or broker, or resell the data as a list. Do not try to break, overload or copy the service.</p></div>
-      <div><h3>Your data</h3><p>Your pipeline, notes, follow-ups, brokers and templates are stored only in your own browser. You are responsible for keeping backups. See the <a href="#privacy">Privacy Policy</a>.</p></div>
+      <div><h3>Your data</h3><p>Your saved leads, notes, follow-ups, brokers and templates are stored only in your own browser. You are responsible for keeping backups. See the <a href="#privacy">Privacy Policy</a>.</p></div>
       <div><h3>No warranty and limit of liability</h3><p>The service is provided "as is" without warranties of any kind. To the maximum extent allowed by law, we are not liable for any lost profits, lost data, fines, claims or damages arising from your use of the service.</p></div>
       <div><h3>Changes</h3><p>We may change the service or these terms at any time. Continued use means you accept the updated terms.</p></div>
     </div>
@@ -858,10 +903,10 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <section class="view" id="view-privacy" hidden>
     <div class="card guide">
       <div><h2 class="title">Privacy Policy</h2><p class="lede">Last updated November 4, 2026.</p></div>
-      <div><h3>What we collect</h3><p>Nothing about you is sent to us. Carrier Scout has no accounts and no server of its own. Your pipeline, notes, follow-ups, brokers, templates and settings are saved only in your browser's local storage on your device.</p></div>
+      <div><h3>What we collect</h3><p>Nothing about you is sent to us. Carrier Scout has no accounts and no server of its own. Your saved leads, notes, follow-ups, brokers, templates and settings are saved only in your browser's local storage on your device.</p></div>
       <div><h3>Where data comes from</h3><p>When you search, your browser requests public carrier records directly from data.transportation.gov (U.S. Department of Transportation). Their privacy policy applies to those requests. Fonts are loaded from Google Fonts.</p></div>
       <div><h3>Calls, texts and emails</h3><p>Call, WhatsApp, text and email buttons open the app you choose (for example your phone, Google Voice or your email program). Those apps have their own privacy policies.</p></div>
-      <div><h3>Deleting your data</h3><p>Clear your browser's site data for this page, or remove carriers from your pipeline, to delete what is stored. Backup files you download are yours to keep safe.</p></div>
+      <div><h3>Deleting your data</h3><p>Clear your browser's site data for this page, or remove carriers from My leads, to delete what is stored. Backup files you download are yours to keep safe.</p></div>
       <div><h3>Carrier information</h3><p>Carrier details shown come from public FMCSA records that carriers file with the government. If you are a carrier and want your details updated, update your MCS-150 with FMCSA.</p></div>
     </div>
   </section>
@@ -871,7 +916,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <p>Every carrier in search results has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
     <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data.</p>
     <p>Local times use each state's main time zone; a few states span two zones.</p>
-    <p>Your pipeline, notes, follow-ups, brokers and templates are saved in this browser only. Use Download backup under Scripts &amp; emails to keep a copy.</p>
+    <p>Your saved leads, notes, follow-ups, brokers and templates are saved in this browser only. Use Download backup under Scripts &amp; settings to keep a copy.</p>
   </footer>
 </main>
 
@@ -1443,11 +1488,19 @@ async function verify(dots, signal) {
   return out;
 }
 
-async function run(append = false) {
+async function run(append = false, opts = {}) {
   const f = append ? state.lastFilters : readFilters();
   const problem = validate(f);
   const err = $("#error");
   if (problem) { err.textContent = problem; err.hidden = false; return; }
+  if (!append && !opts.auto) {
+    const u = usage();
+    if (u.searches >= LIMITS.searchesPerDay) {
+      err.textContent = `You've used today's ${LIMITS.searchesPerDay} free searches. Your searches reset at midnight, so come back tomorrow! Your saved leads and Today list still work.`;
+      err.hidden = false; return;
+    }
+    u.searches++; saveUsage(u); renderLimits();
+  }
   err.hidden = true;
   if (state.abort) state.abort.abort();
   const ctrl = new AbortController(); state.abort = ctrl;
@@ -1537,8 +1590,8 @@ function visibleResults() {
 }
 function stageSelect(dot) {
   const s = stageOf(dot);
-  const opts = (s ? "" : `<option value="" selected>+ Add to pipeline</option>`) + STAGES.map(([k, l]) => `<option value="${k}"${k === s ? " selected" : ""}>${l}</option>`).join("");
-  return `<select class="stage ${s ? "st-" + s : ""}" data-stage="${dot}" aria-label="Pipeline stage">${opts}</select>`;
+  const opts = (s ? "" : `<option value="" selected>+ Save lead</option>`) + STAGES.map(([k, l]) => `<option value="${k}"${k === s ? " selected" : ""}>${l}</option>`).join("");
+  return `<select class="stage ${s ? "st-" + s : ""}" data-stage="${dot}" aria-label="Lead stage">${opts}</select>`;
 }
 function dueBadge(lead) {
   if (!lead?.followUp) return "";
@@ -1571,7 +1624,7 @@ function renderFind() {
   if (ex.none) parts.push(`${ex.none} without MC authority`);
   const hot = state.results.filter(x => leadScore(x.c).level === "hot").length;
   const inPipe = state.results.filter(x => stageOf(x.dot)).length;
-  $("#excluded").textContent = [hot ? `🔥 ${hot} hot leads` : "", inPipe ? `${inPipe} already in your pipeline` : "", parts.length ? `Left out: ${parts.join(", ")}` : ""].filter(Boolean).join("  ·  ");
+  $("#excluded").textContent = [hot ? `🔥 ${hot} hot leads` : "", inPipe ? `${inPipe} already saved` : "", parts.length ? `Left out: ${parts.join(", ")}` : ""].filter(Boolean).join("  ·  ");
   $("#results").classList.toggle("selecting", state.selecting);
 
   const list = visibleResults(), body = $("#rows");
@@ -1660,7 +1713,7 @@ function renderToday() {
   const section = (title, items, kind, emptyText) => `<div class="card list"><h3><span>${title}</span><span>${items.length}</span></h3>${items.length ? items.map(x => todayItem(x, kind)).join("") : `<div class="empty" style="padding:22px">${emptyText}</div>`}</div>`;
   const nothing = !savedLeads().length;
   $("#todayLists").innerHTML = nothing
-    ? `<div class="card empty"><strong>Your call list is empty</strong>Go to <a href="#find">Find carriers</a> and use "+ Add to pipeline" on carriers you want to call. They'll show up here.</div>`
+    ? `<div class="card empty"><strong>Your call list is empty</strong>Go to <a href="#find">Find carriers</a> and use "+ Save lead" on carriers you want to call. They'll show up here.</div>`
     : section("Overdue", over, "due", "Nothing overdue. Nice.") + section("Due today", today, "due", "No more follow-ups today.") +
       section("New leads to call", fresh.slice(0, 50), "new", "No uncalled leads. Add more from Find carriers.") + section("Coming up (next 7 days)", soon, "due", "Nothing scheduled this week.");
   renderNumbers();
@@ -1693,7 +1746,7 @@ function renderNumbers() {
     [count(talked, since(6)), "Conversations, 7 days"],
     [count(moved("interested"), since(6)), "New interested, 7 days"],
     [count(moved("signed"), since(29)), "Signed, last 30 days"],
-    [`${rate}%`, `Signed out of ${leads.length} in pipeline`]
+    [`${rate}%`, `Signed out of ${leads.length} saved leads`]
   ];
   $("#stats").innerHTML = stats.map(([n, k]) => `<div class="stat"><div class="n">${n}</div><div class="k">${k}</div></div>`).join("");
   const days = Array.from({ length: 14 }, (_, i) => startOfDay(new Date(Date.now() - (13 - i) * 864e5)));
@@ -1822,6 +1875,23 @@ function fillReady(dots) {
   }));
 }
 
+/* ===================== Daily limits ===================== */
+/* Free daily allowance so dispatchers come back each day. Counted in this browser and reset at midnight. Change the numbers here. */
+const LIMITS = { searchesPerDay: 60, exportsPerDay: 60 };
+const USAGE_KEY = "cs-usage";
+function usage() {
+  const today = localIso(new Date());
+  let u = null;
+  try { u = JSON.parse(localStorage.getItem(USAGE_KEY) || "null"); } catch {}
+  return u && u.day === today ? u : { day: today, searches: 0, exported: 0 };
+}
+function saveUsage(u) { try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch {} }
+const searchesLeft = () => Math.max(0, LIMITS.searchesPerDay - usage().searches);
+const exportsLeft = () => Math.max(0, LIMITS.exportsPerDay - usage().exported);
+function renderLimits() {
+  $("#limitsLine").innerHTML = `Today: <b>${searchesLeft()}</b> of ${LIMITS.searchesPerDay} searches left · <b>${exportsLeft()}</b> of ${LIMITS.exportsPerDay} exports left · resets at midnight`;
+}
+
 /* ===================== Daily target ===================== */
 const callsToday = () => { const t0 = startOfDay().getTime(); return Object.values(db.leads).flatMap(l => l.log || []).filter(e => e.kind === "call" && e.t >= t0).length; };
 const dailyTarget = () => Math.max(1, parseInt(db.me?.target, 10) || 50);
@@ -1853,34 +1923,39 @@ function renderCallMode() {
   const dot = cm.queue[cm.i], c = carrierFor(dot), lead = leadOf(dot);
   const d10 = digits(c.phone).slice(-10), msg = encodeURIComponent(fillTemplate(template("text").body, c));
   const last = lead?.log?.find(e => e.kind === "note" || e.kind === "call");
+  /* Order follows the call: who to ask for, Call, what happened. Details and extra buttons come after. */
   box.innerHTML = top + `
     <div class="cm-card">
-      <div class="who2">${avatar(c.name, true)}<div><h3>${esc(c.name)}</h3><div class="ids">${esc(c.mc)} · DOT ${dot} · ${esc(c.city)}, ${esc(c.state)}</div></div></div>
-      <div>${heatBadge(c)} <span class="sub">${esc(leadScore(c).why.join(" · "))}</span></div>
-      <div><div class="sub">Ask for</div><div class="cm-ask">${c.people.length ? esc(c.people.join(" or ")) : "The owner"}</div>${tzBadge(c.state, true)}</div>
-      ${insPlaceholder(dot)}
-      ${readyPlaceholder(dot)}
-      <div class="sub">${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 3).join(", ")) : ""}${lead ? ` · <span class="chipstage st-${lead.stage}">${STAGE_LABEL[lead.stage]}</span>` : ""}</div>
-      ${last ? `<div class="sub">Last time: ${esc(last.text)} (${esc(fmtWhen(last.t))})</div>` : ""}
+      <div class="who2">${avatar(c.name, true)}<div>${heatBadge(c)}<h3>${esc(c.name)}</h3><div class="ids">${esc(c.city)}, ${esc(c.state)} · ${esc(c.mc)}</div></div></div>
+      <div><span class="sub">Ask for</span> <span class="cm-ask">${c.people.length ? esc(c.people.join(" or ")) : "The owner"}</span><div>${tzBadge(c.state, true)}</div></div>
     </div>
     <div class="cm-call">
       <a class="btn primary" ${callAttrs(c.phone)}>📞 Call ${esc(fmtPhone(c.phone))}</a>
       ${dialerSelect()}
-      <div class="row">
-        <a class="btn" href="https://wa.me/1${d10}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
-        <a class="btn" href="sms:+1${d10}?&body=${msg}">Text</a>
-        <button class="btn" type="button" data-copy="${esc(fmtPhone(c.phone))}">Copy number</button>
-      </div>
     </div>
-    <div class="addnote"><input id="cmNote" placeholder="Note (optional): e.g. 2 reefers, wants Texas loads"></div>
     <section style="display:grid;gap:8px">
       <h4 class="label" style="margin:0">After the call, tap what happened</h4>
       <div class="pickrow big">${Object.entries(CALL_OUTCOMES).map(([k, o]) => `<button type="button" data-cmcall="${k}">${o.label}</button>`).join("")}</div>
+      <div class="addnote"><input id="cmNote" placeholder="Note (optional): e.g. 2 reefers, wants Texas loads"></div>
     </section>
     <div class="buttons" style="justify-content:space-between">
       <button class="btn" type="button" data-cm="back" ${cm.i === 0 ? "disabled" : ""}>← Back</button>
       <button class="btn" type="button" data-cm="skip">Skip ⏭</button>
-    </div>`;
+    </div>
+    <details class="fold"><summary>More about this carrier · WhatsApp · Text</summary>
+      <div style="display:grid;gap:8px;margin-top:10px">
+        ${insPlaceholder(dot)}
+        ${readyPlaceholder(dot)}
+        <div class="sub">${esc(leadScore(c).why.join(" · "))}</div>
+        <div class="sub">${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 3).join(", ")) : ""}${lead ? ` · <span class="chipstage st-${lead.stage}">${STAGE_LABEL[lead.stage]}</span>` : ""} · DOT ${dot}</div>
+        ${last ? `<div class="sub">Last time: ${esc(last.text)} (${esc(fmtWhen(last.t))})</div>` : ""}
+        <div class="cm-call"><div class="row">
+          <a class="btn" href="https://wa.me/1${d10}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn" href="sms:+1${d10}?&body=${msg}">Text</a>
+          <button class="btn" type="button" data-copy="${esc(fmtPhone(c.phone))}">Copy number</button>
+        </div></div>
+      </div>
+    </details>`;
   fillInsurance(dot);
   fillReady([dot]);
 }
@@ -1964,7 +2039,7 @@ function renderPipeline() {
 function renderCustomers() {
   const list = savedLeads().filter(x => x.l.stage === "signed").sort((a, b) => (a.c.name).localeCompare(b.c.name));
   const body = $("#custRows");
-  if (!list.length) { body.innerHTML = `<tr><td colspan="8" class="empty"><strong>No customers yet</strong>When a carrier signs, move it to "Signed" in the pipeline and it shows up here.</td></tr>`; return; }
+  if (!list.length) { body.innerHTML = `<tr><td colspan="8" class="empty"><strong>No customers yet</strong>When a carrier signs, move it to "Signed" in My leads and it shows up here.</td></tr>`; return; }
   body.innerHTML = list.map(({ dot, l, c }) => {
     const cu = l.customer || {}, done = ONBOARDING.filter(([k]) => cu.checks?.[k]).length;
     return `<tr data-open="${dot}" style="cursor:pointer">
@@ -2123,18 +2198,18 @@ function renderDetail() {
       </div>
     </details>
 
-    ${lead ? `<section><button class="btn danger" type="button" id="removeLead">Remove from pipeline</button></section>` : ""}`;
+    ${lead ? `<section><button class="btn danger" type="button" id="removeLead">Remove from My leads</button></section>` : ""}`;
   fillInsurance(dot);
   fillReady([dot]);
 }
 
 /* ===================== export & backup ===================== */
-function csv() {
-  const head = ["Lead score", "Pipeline stage", "Follow-up", "Last note", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts",
+function csv(list = visibleResults()) {
+  const head = ["Lead score", "Lead stage", "Follow-up", "Last note", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts",
     "Phone", "Cell", "Email", "Street", "City", "State", "ZIP", "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo",
     "Authority event", "Authority date", "Registered", "MCS-150 date", "Safety rating"];
   const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines = visibleResults().map(({ dot, c }) => {
+  const lines = list.map(({ dot, c }) => {
     const l = leadOf(dot);
     const h = leadScore(c);
     return [`${HEAT[h.level].replace(/^\S+\s/, "")} ${h.s}`, l ? STAGE_LABEL[l.stage] : "", l?.followUp ? fmtWhen(l.followUp) : "", l?.log?.find(e => e.kind === "note")?.text || "",
@@ -2200,6 +2275,14 @@ function setDays(back) {
   const to = new Date(), from = new Date(Date.now() - back * 864e5);
   $("#dateFrom").value = localIso(from); $("#dateTo").value = localIso(to);
   document.querySelectorAll("[data-days]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.days === back)));
+  updateDateSum();
+}
+/* One readable line instead of two date boxes: "📅 Nov 3 – Nov 4 · newly granted". */
+function updateDateSum() {
+  const f = $("#dateFrom").value, t = $("#dateTo").value;
+  const nice = s => s ? new Date(s + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+  const ev = { granted: "newly granted", reinstated: "reinstated", both: "granted or reinstated" }[$("#event").value];
+  $("#dateSum").innerHTML = `📅 ${esc(f === t ? nice(f) : `${nice(f)} – ${nice(t)}`)} <span>· MC authority ${ev}</span>`;
 }
 function resetFilters() {
   state.equipment.clear(); state.cargo.clear();
@@ -2233,7 +2316,14 @@ function init() {
   document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
   document.querySelectorAll("[data-driver]").forEach(b => b.addEventListener("click", () => setDriver(b.dataset.driver)));
   document.querySelectorAll("[data-days]").forEach(b => b.addEventListener("click", () => { setDays(+b.dataset.days); run(false); }));
-  ["#dateFrom", "#dateTo"].forEach(s => $(s).addEventListener("change", () => document.querySelectorAll("[data-days]").forEach(b => b.setAttribute("aria-pressed", "false"))));
+  ["#dateFrom", "#dateTo"].forEach(s => $(s).addEventListener("change", () => { document.querySelectorAll("[data-days]").forEach(b => b.setAttribute("aria-pressed", "false")); updateDateSum(); }));
+  $("#event").addEventListener("change", updateDateSum);
+  $("#customBtn").addEventListener("click", e => {
+    const box = $("#customDates"), open = box.hidden;
+    box.hidden = !open; $("#dateSum").hidden = open;
+    e.currentTarget.setAttribute("aria-expanded", String(open));
+    e.currentTarget.textContent = open ? "Hide custom dates" : "📅 Custom dates";
+  });
   $("#moreBtn").addEventListener("click", () => { const open = $("#more").hidden; $("#more").hidden = !open; $("#moreBtn").setAttribute("aria-expanded", String(open)); });
   $("#equipment").addEventListener("click", e => {
     const b = e.target.closest("[data-eq]"); if (!b) return;
@@ -2250,6 +2340,12 @@ function init() {
   let qt; $("#q").addEventListener("input", e => { clearTimeout(qt); qt = setTimeout(() => { state.q = e.target.value.trim(); state.shown = SHOW_STEP; renderFind(); }, 150); });
   let pt; $("#pq").addEventListener("input", e => { clearTimeout(pt); pt = setTimeout(() => { state.pq = e.target.value.trim(); renderPipeline(); }, 150); });
   $("#sort").addEventListener("change", renderFind);
+  $("#welcome").hidden = !!db.me?.welcomed;
+  $("#welcomeOk").addEventListener("click", () => { db.me = { ...db.me, welcomed: true }; saveDb(); $("#welcome").hidden = true; });
+  $("#toolsBtn").addEventListener("click", e => {
+    const open = $("#toolsExtra").classList.toggle("open");
+    e.currentTarget.setAttribute("aria-expanded", String(open));
+  });
   $("#hidePipeBtn").addEventListener("click", e => {
     state.hidePipe = !state.hidePipe; state.shown = SHOW_STEP;
     e.currentTarget.setAttribute("aria-pressed", String(state.hidePipe)); renderFind();
@@ -2269,7 +2365,7 @@ function init() {
     if (box) { box.checked ? state.selected.add(+box.dataset.sel) : state.selected.delete(+box.dataset.sel); renderBulk(); return; }
     const sel = e.target.closest("[data-stage]"); if (!sel || !sel.value) return;
     setStage(+sel.dataset.stage, sel.value);
-    toast(`${STAGE_LABEL[sel.value]}: saved to your pipeline`);
+    toast(`${STAGE_LABEL[sel.value]}: saved to My leads`);
     renderAll();
   });
 
@@ -2283,14 +2379,18 @@ function init() {
     saveDb();
     const skipped = state.selected.size - added;
     state.selected.clear();
-    toast(`Added ${added} to your pipeline${skipped ? ` (${skipped} were already in it)` : ""}`);
+    toast(`Saved ${added} leads${skipped ? ` (${skipped} were already in it)` : ""}`);
     renderAll();
   });
   $("#bulkPhones").addEventListener("click", () => {
     const lines = state.results.filter(x => state.selected.has(x.dot) && x.c.phone)
       .map(x => `${fmtPhone(x.c.phone)}\t${x.c.people[0] || ""}\t${x.c.name}`);
     if (!lines.length) { toast("None of the selected carriers has a phone number."); return; }
-    copyText(lines.join("\n"), `Copied ${lines.length} phone numbers`);
+    const left = exportsLeft();
+    if (!left) { toast(`Today's ${LIMITS.exportsPerDay} free exports are used up. More tomorrow!`); return; }
+    const take = lines.slice(0, left);
+    const u = usage(); u.exported += take.length; saveUsage(u); renderLimits();
+    copyText(take.join("\n"), take.length < lines.length ? `Copied ${take.length} phone numbers (daily limit reached)` : `Copied ${take.length} phone numbers`);
   });
   $("#bulkClear").addEventListener("click", () => { state.selected.clear(); renderFind(); });
 
@@ -2345,7 +2445,7 @@ function init() {
     }
     if (e.target.id === "addNote") { addNote(dot); return; }
     if (e.target.id === "removeLead") {
-      if (e.target.dataset.armed) { removeLead(dot); toast("Removed from pipeline"); renderAll(); }
+      if (e.target.dataset.armed) { removeLead(dot); toast("Removed from My leads"); renderAll(); }
       else { e.target.dataset.armed = "1"; e.target.textContent = "Click again to remove (notes will be deleted)"; }
     }
   });
@@ -2389,10 +2489,16 @@ function init() {
 
   // CSV
   $("#exportCsv").addEventListener("click", () => {
-    const n = visibleResults().length;
-    if (!n) { toast("Nothing to export yet. Run a search first."); return; }
-    download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(), "text/csv;charset=utf-8");
-    toast(`Exported ${n} carriers (opens in Excel)`);
+    const all = visibleResults();
+    if (!all.length) { toast("Nothing to export yet. Run a search first."); return; }
+    const left = exportsLeft();
+    if (!left) { toast(`Today's ${LIMITS.exportsPerDay} free exports are used up. More tomorrow!`); return; }
+    const list = all.slice(0, left);
+    download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(list), "text/csv;charset=utf-8");
+    const u = usage(); u.exported += list.length; saveUsage(u); renderLimits();
+    toast(list.length < all.length
+      ? `Exported your top ${list.length} carriers (daily limit). More tomorrow!`
+      : `Exported ${list.length} carriers (opens in Excel). ${exportsLeft()} exports left today.`);
   });
 
   // Call buttons: copy the number on every click; "Just copy" mode stays on the page
@@ -2426,7 +2532,7 @@ function init() {
   });
   $("#startCallsToday").addEventListener("click", () => {
     const q = todayQueue();
-    if (!q.length) { toast("Nobody to call yet. Add carriers to your pipeline from Find carriers."); return; }
+    if (!q.length) { toast("Nobody to call yet. Save carriers from Find carriers first."); return; }
     startCalling(q, "Today's list");
   });
   const cmd = $("#callMode");
@@ -2508,7 +2614,8 @@ function init() {
   });
   checkReminders();
   backfillCarriers();
-  run(false);
+  renderLimits();
+  run(false, { auto: true });
 }
 function addNote(dot) {
   const input = $("#noteInput"), text = input.value.trim();

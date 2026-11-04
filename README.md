@@ -1,6 +1,6 @@
-# Carrier Scout
+# DispatchWala
 
-Find active, MC-authorized US motor carriers by MC number range, location, or the date their operating authority was granted.
+DispatchWala helps truck dispatchers find active, MC-authorized US motor carriers by MC number range, location, or the date their operating authority was granted.
 
 Filters: equipment type (inferred from cargo), cargo classification, CDL / Non-CDL drivers, truck count, phone/email on file. Results export to CSV.
 

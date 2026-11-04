@@ -7,33 +7,36 @@
 <meta name="description" content="Find new MC carriers with owner names and phone numbers, then work them through calls, follow-ups and a pipeline until they sign.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: guide-sign header, a sticky page nav, then one view at a time: Find carriers, Today, Pipeline, Customers, Scripts, Guide. */
+/* Layout: deep-green header with a lane-line edge, a sticky icon nav, then one view at a time: Find carriers, Today, Pipeline, Customers, Brokers, Scripts, Guide. */
 :root {
-  --bg: #eef2ef;
+  --bg: #f3f6f4;
   --surface: #ffffff;
-  --surface-2: #f5f8f6;
-  --ink: #15211b;
-  --muted: #5b6a62;
-  --line: #d6dfd9;
-  --accent: #0d6a44;
+  --surface-2: #f6f9f7;
+  --ink: #102019;
+  --muted: #5a6b62;
+  --line: #e1e8e3;
+  --accent: #0a7d4f;
   --accent-ink: #ffffff;
-  --accent-soft: #dcefe4;
+  --accent-soft: #e0f3e9;
+  --hero: #06281c;
+  --hero-ink: #eaf7f0;
+  --av-bg: 92%; --av-fg: 28%;
   --ok: #157347;  --ok-soft: #dff3e7;
   --info: #1d5fa8; --info-soft: #e1ecf9;
   --warn: #8f5b00; --warn-soft: #fbefd6;
   --bad: #b3261e; --bad-soft: #fbe3e1;
   --violet: #6b3fa0; --violet-soft: #efe6f8;
-  --shadow: 0 1px 2px rgba(16, 40, 28, .06), 0 8px 24px rgba(16, 40, 28, .06);
-  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
-  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --shadow: 0 1px 2px rgba(16, 40, 28, .05), 0 10px 30px -12px rgba(16, 40, 28, .14);
+  --font-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d1411; --surface: #141e19; --surface-2: #19251f; --ink: #e3ebe6; --muted: #93a39a; --line: #2a3832;
-    --accent: #0f7a4e; --accent-ink: #ffffff; --accent-soft: #173a2a;
+    --bg: #0b120f; --surface: #121b17; --surface-2: #17221d; --ink: #e3ebe6; --muted: #93a39a; --line: #24312b;
+    --accent: #0f8a58; --accent-ink: #ffffff; --accent-soft: #163a29; --hero: #04170f; --hero-ink: #e3f3ea; --av-bg: 24%; --av-fg: 82%;
     --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
     --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
@@ -41,8 +44,8 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0d1411; --surface: #141e19; --surface-2: #19251f; --ink: #e3ebe6; --muted: #93a39a; --line: #2a3832;
-  --accent: #0f7a4e; --accent-ink: #ffffff; --accent-soft: #173a2a;
+  --bg: #0b120f; --surface: #121b17; --surface-2: #17221d; --ink: #e3ebe6; --muted: #93a39a; --line: #24312b;
+  --accent: #0f8a58; --accent-ink: #ffffff; --accent-soft: #163a29; --hero: #04170f; --hero-ink: #e3f3ea; --av-bg: 24%; --av-fg: 82%;
   --ok: #57c98e; --ok-soft: #173a2a; --info: #79aef0; --info-soft: #172a40;
   --warn: #e3ad4f; --warn-soft: #3a2e15; --bad: #f08a82; --bad-soft: #3d1d1b; --violet: #c3a1ec; --violet-soft: #2c2040;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
@@ -57,32 +60,46 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .sub { font-size: 12px; color: var(--muted); }
-h2.title { margin: 0; font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: .02em; line-height: 1.05; }
-.lede { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+h2.title { margin: 0; font-family: var(--font-display); font-size: clamp(24px, 3vw, 30px); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; text-wrap: balance; }
+.lede { margin: 6px 0 0; color: var(--muted); max-width: 70ch; font-size: 14.5px; }
 
 .wrap { max-width: 1400px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
-/* Guide-sign header */
-.band { background: var(--accent); color: var(--accent-ink); }
-.band .wrap { padding-block: 12px; }
-.sign { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; border: 2px solid rgba(255,255,255,.9); border-radius: 10px; padding: 8px 14px; }
-.sign h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: .06em; text-transform: uppercase; line-height: 1; }
-.sign .route { font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; background: #fff; color: #0d6a44; border-radius: 4px; padding: 3px 7px; }
-.sign p { margin: 0; flex: 1 1 260px; font-size: 13px; opacity: .92; min-width: 0; }
+/* Header: deep green with a dashed lane line along the bottom edge */
+.band { position: relative; background: radial-gradient(1200px 300px at 85% -40%, rgba(46, 190, 120, .28), transparent 60%), var(--hero); color: var(--hero-ink); }
+.band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: repeating-linear-gradient(90deg, #f2c94c 0 28px, transparent 28px 52px); opacity: .85; }
+.bandrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding-block: 14px 17px; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; min-width: 0; }
+.logo { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(140deg, #19b46f, #0a7d4f); box-shadow: 0 6px 18px -6px rgba(25, 180, 111, .7); flex: none; }
+.logo svg { width: 24px; height: 24px; color: #fff; }
+.brand b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; }
+.brand small { display: block; font-size: 12.5px; opacity: .75; }
+.live { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); padding: 6px 12px; border-radius: 999px; }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: #3ee08f; box-shadow: 0 0 0 0 rgba(62, 224, 143, .6); animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(62, 224, 143, .55); } 70% { box-shadow: 0 0 0 8px rgba(62, 224, 143, 0); } 100% { box-shadow: 0 0 0 0 rgba(62, 224, 143, 0); } }
+@media (prefers-reduced-motion: reduce) { .live i { animation: none; } }
 
-/* Page nav */
+/* Page nav with icons */
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
-.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
-.nav .wrap { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-.nav a { display: inline-flex; align-items: center; gap: 7px; padding: 12px 14px 11px; text-decoration: none; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
-.nav a:hover { color: var(--ink); }
-.nav a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 8px; }
+.nav a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; text-decoration: none; font-weight: 600; font-size: 13.5px; color: var(--muted); border-radius: 10px; white-space: nowrap; }
+.nav a svg { width: 18px; height: 18px; flex: none; }
+.nav a:hover { color: var(--ink); background: var(--surface-2); }
+.nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
 .nav .count { background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; font-size: 11px; padding: 0 7px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .nav .count.hot { background: var(--bad); border-color: var(--bad); color: #fff; }
 
 main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .view { display: grid; gap: 16px; min-width: 0; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+.tablebox.card { border-radius: 16px; }
+/* Carrier avatar: initials on a soft colour picked from the name */
+.who2 { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.who2 > div { min-width: 0; }
+.av { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; font-size: 12.5px; font-weight: 800; letter-spacing: .02em;
+  background: hsl(var(--h) 55% var(--av-bg)); color: hsl(var(--h) 55% var(--av-fg)); }
+.av.big { width: 46px; height: 46px; border-radius: 13px; font-size: 15px; }
 
 /* Search card */
 .searchcard { padding: 16px; display: grid; gap: 14px; }
@@ -101,9 +118,11 @@ main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; font-weight: 500; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 14px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: border-color .15s, background .15s, transform .1s; }
 .btn:hover { border-color: var(--accent); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; padding-inline: 18px; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; padding-inline: 18px; box-shadow: 0 6px 16px -8px rgba(10, 125, 79, .8); }
+.btn.primary:hover { filter: brightness(1.07); }
 .btn.primary:disabled { opacity: .6; cursor: progress; }
 .btn.small { padding: 5px 10px; font-size: 12.5px; border-radius: 999px; }
 .btn.small[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
@@ -135,7 +154,7 @@ details.cargo[open] summary::after { content: "▴"; }
 
 /* Results */
 .summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
-.count { font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: .02em; }
+.count { font-family: var(--font-display); font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
 .count small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
 .excluded { font-size: 12.5px; color: var(--muted); }
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -200,6 +219,7 @@ select.stage[class*="st-"] { border-color: transparent; }
 .showmore { justify-self: center; }
 
 td.c-meta { display: none; }
+td.c-status { white-space: nowrap; }
 @media (max-width: 760px) {
   #results table { min-width: 0; }
   #results thead { display: none; }
@@ -217,8 +237,11 @@ td.c-meta { display: none; }
 
 /* Today */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
-.tile { padding: 14px 16px; display: grid; gap: 2px; }
-.tile .n { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1; }
+.tile { padding: 16px 18px; display: grid; gap: 4px; position: relative; overflow: hidden; }
+.tile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--line); }
+.tile.over::before { background: var(--bad); }
+.tile.today::before { background: var(--warn); }
+.tile .n { font-family: var(--font-display); font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
 .tile.over .n { color: var(--bad); }
 .tile.today .n { color: var(--warn); }
 .tile .k { font-size: 12.5px; color: var(--muted); }
@@ -257,7 +280,7 @@ td.c-meta { display: none; }
 .placeholders { display: flex; flex-wrap: wrap; gap: 6px; }
 .placeholders code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
 .guide { padding: 20px; display: grid; gap: 18px; max-width: 860px; }
-.guide h3 { margin: 0; font-family: var(--font-display); font-size: 22px; letter-spacing: .02em; }
+.guide h3 { margin: 0; font-family: var(--font-display); font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
 .guide p, .guide li { max-width: 72ch; }
 .guide ol, .guide ul { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
 .guide .callout { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; }
@@ -307,7 +330,7 @@ dialog::backdrop { background: rgba(10, 20, 15, .45); }
 .sheet { display: grid; gap: 18px; padding: calc(env(safe-area-inset-top, 0px) + 18px) max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) 20px; }
 .sheet header { display: flex; gap: 12px; align-items: flex-start; }
 .sheet header > div { flex: 1; min-width: 0; }
-.sheet h3 { margin: 0; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.05; letter-spacing: .02em; text-wrap: balance; }
+.sheet h3 { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 800; line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
 .sheet .dba { color: var(--muted); font-size: 13px; margin-top: 3px; }
 .sheet .idrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
 .close { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; line-height: 1; flex: none; }
@@ -345,25 +368,25 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 </head>
 <body>
 
-<div class="band">
-  <div class="wrap">
-    <div class="sign">
-      <span class="route">FMCSA</span>
-      <h1>Carrier Scout</h1>
-      <p>Find new MC carriers with owner names and phone numbers, then call, follow up and sign them. Live FMCSA data, updated daily.</p>
-    </div>
+<header class="band">
+  <div class="wrap bandrow">
+    <a class="brand" href="#find" aria-label="Carrier Scout home">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5h11v9H2z"/><path d="M13 9.5h4.2l3.3 3.3v2.7H13z"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span>
+      <span><b>Carrier Scout</b><small>Find carriers. Call. Sign them.</small></span>
+    </a>
+    <span class="live"><i></i> Live FMCSA data · updated daily</span>
   </div>
-</div>
+</header>
 
 <nav class="nav" aria-label="Pages">
   <div class="wrap">
-    <a href="#find" data-view="find">Find carriers</a>
-    <a href="#today" data-view="today">Today <span class="count" id="navToday">0</span></a>
-    <a href="#pipeline" data-view="pipeline">Pipeline <span class="count" id="navPipe">0</span></a>
-    <a href="#customers" data-view="customers">Customers <span class="count" id="navCust">0</span></a>
-    <a href="#brokers" data-view="brokers">Brokers <span class="count" id="navBrokers">0</span></a>
-    <a href="#scripts" data-view="scripts">Scripts &amp; emails</a>
-    <a href="#guide" data-view="guide">Dispatch guide</a>
+    <a href="#find" data-view="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Find carriers</a>
+    <a href="#today" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Today <span class="count" id="navToday">0</span></a>
+    <a href="#pipeline" data-view="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Pipeline <span class="count" id="navPipe">0</span></a>
+    <a href="#customers" data-view="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Customers <span class="count" id="navCust">0</span></a>
+    <a href="#brokers" data-view="brokers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>Brokers <span class="count" id="navBrokers">0</span></a>
+    <a href="#scripts" data-view="scripts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Scripts &amp; emails</a>
+    <a href="#guide" data-view="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>Dispatch guide</a>
   </div>
 </nav>
 
@@ -371,6 +394,10 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 
   <!-- ============ FIND CARRIERS ============ -->
   <section class="view" id="view-find">
+    <div>
+      <h2 class="title">Find carriers to call</h2>
+      <p class="lede">New MC authorities with owner names and phone numbers. Every carrier here is checked as active.</p>
+    </div>
     <form class="card searchcard" id="search" novalidate>
       <div class="tabs" role="tablist" aria-label="Search by">
         <button type="button" role="tab" data-mode="date" aria-selected="true">New authority</button>
@@ -1284,6 +1311,12 @@ function phoneCell(c) {
   const phone = fmtPhone(c.phone);
   return phone ? `<span class="phone"><a href="${telHref(c.phone)}" data-stop>${esc(phone)}</a><button class="icon" type="button" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`;
 }
+function avatar(name, big) {
+  const words = titleCase(name).replace(/\b(LLC|Inc|Corp|Co|Ltd|The)\b\.?/g, "").trim().split(/\s+/).filter(w => /^[A-Za-z0-9]/.test(w));
+  const ini = ((words[0]?.[0] || "") + (words[1]?.[0] || "")).toUpperCase() || "?";
+  let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `<span class="av${big ? " big" : ""}" style="--h:${h}" aria-hidden="true">${esc(ini)}</span>`;
+}
 function personCell(c) {
   return c.people.length ? `<div class="person">${esc(c.people[0])}</div>${c.people[1] ? `<div class="sub">${esc(c.people.slice(1).join(", "))}</div>` : ""}` : `<span class="sub">Not listed</span>`;
 }
@@ -1328,7 +1361,7 @@ function renderFind() {
     return `<tr data-i="${dot}" class="${s === "lost" ? "done" : ""}">
       <td class="c-sel"><input type="checkbox" data-sel="${dot}"${state.selected.has(dot) ? " checked" : ""} aria-label="Select ${esc(c.name)}"></td>
       <td class="c-lead">${stageSelect(dot)}${dueBadge(lead) ? `<div>${dueBadge(lead)}</div>` : ""}${last ? `<span class="lastnote" title="${esc(last.text)}">${esc(last.text)}</span>` : ""}</td>
-      <td class="c-carrier"><div class="cname">${esc(c.name)}</div>${c.dba ? `<div class="sub">DBA ${esc(c.dba)}</div>` : ""}<div class="ids">${esc(c.mc)} · DOT ${dot}</div></td>
+      <td class="c-carrier"><div class="who2">${avatar(c.name)}<div><div class="cname">${esc(c.name)}</div>${c.dba ? `<div class="sub">DBA ${esc(c.dba)}</div>` : ""}<div class="ids">${esc(c.mc)} · DOT ${dot}</div></div></div></td>
       <td class="c-status"><span class="pill">● Active</span><div class="sub">MC &amp; USDOT</div></td>
       <td class="c-person">${personCell(c)}</td>
       <td class="c-phone">${phoneCell(c)}</td>
@@ -1365,8 +1398,8 @@ function savedLeads() {
 function todayItem(x, kind) {
   const { dot, l, c } = x;
   return `<div class="item" data-open="${dot}">
-    <div class="who"><div class="cname">${esc(c.name)}</div><div class="sub">${c.people[0] ? "Ask for " + esc(c.people[0]) + " · " : ""}${esc(c.city)}, ${esc(c.state)} · ${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}</div>
-      <div><span class="chipstage st-${l.stage}">${STAGE_LABEL[l.stage]}</span> ${dueBadge(l)} ${tzBadge(c.state, true)}</div></div>
+    <div class="who who2">${avatar(c.name)}<div><div class="cname">${esc(c.name)}</div><div class="sub">${c.people[0] ? "Ask for " + esc(c.people[0]) + " · " : ""}${esc(c.city)}, ${esc(c.state)} · ${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}</div>
+      <div><span class="chipstage st-${l.stage}">${STAGE_LABEL[l.stage]}</span> ${dueBadge(l)} ${tzBadge(c.state, true)}</div></div></div>
     <div>${phoneCell(c)}${l.log[0] ? `<span class="lastnote" style="max-width:260px">${esc(l.log[0].text)}</span>` : ""}</div>
     <div class="acts">
       ${c.phone ? `<a class="btn small" href="${telHref(c.phone)}" data-stop>Call</a>` : ""}
@@ -1492,8 +1525,8 @@ function renderPipeline() {
     return `<div class="col" data-col="${k}">
       <header><b><span class="chipstage st-${k}">${label}</span></b><span class="sub">${items.length}</span></header>
       <div class="cards">${items.map(({ dot, l, c }) => `<div class="kcard" draggable="true" data-card="${dot}">
-          <div class="cname">${esc(c.name)}</div>
-          <div class="sub">${c.people[0] ? esc(c.people[0]) + " · " : ""}${esc(c.city)}, ${esc(c.state)}</div>
+          <div class="who2">${avatar(c.name)}<div><div class="cname">${esc(c.name)}</div>
+          <div class="sub">${c.people[0] ? esc(c.people[0]) + " · " : ""}${esc(c.city)}, ${esc(c.state)}</div></div></div>
           <div>${phoneCell(c)}</div>
           <div class="sub">${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 2).join(", ")) : ""}</div>
           ${dueBadge(l)}
@@ -1572,6 +1605,7 @@ function renderDetail() {
   }).join("");
   $("#sheet").innerHTML = `
     <header>
+      ${avatar(c.name, true)}
       <div>
         <h3>${esc(c.name)}</h3>
         ${c.dba ? `<div class="dba">DBA ${esc(c.dba)}</div>` : ""}

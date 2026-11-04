@@ -192,6 +192,13 @@ main.wrap { display: grid; gap: 16px; padding-block: 18px 32px; }
 .tools-toggle { display: none; }
 #startCallsFind { order: 10; }
 @media (max-width: 760px) {
+  #view-find > div:first-child .lede { display: none; }
+  #view-find h2.title { font-size: 26px; }
+  .clocks { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .clocks .sub { display: none; }
+  .clock { flex: none; padding: 5px 10px; font-size: 12.5px; }
+  main.wrap { padding-block: 12px 28px; gap: 12px; }
+  .view { gap: 12px; }
   .tools-toggle { display: inline-flex; }
   #startCallsFind { order: 0; flex: 1 1 auto; justify-content: center; font-size: 16px; padding-block: 12px; }
   .tools-extra { display: none; width: 100%; flex-wrap: wrap; gap: 8px; }

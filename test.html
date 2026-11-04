@@ -1597,23 +1597,24 @@ function computeScore(c) {
   const ref = c.authDate || c.added;
   if (ref && ref.length >= 8) {
     const days = Math.max(0, Math.floor((Date.now() - new Date(+ref.slice(0, 4), +ref.slice(4, 6) - 1, +ref.slice(6, 8))) / 864e5));
-    if (days <= 14) { s += 30; why.push(`brand new (${days} ${days === 1 ? "day" : "days"})`); }
-    else if (days <= 30) { s += 22; why.push(`${days} days old`); }
-    else if (days <= 90) { s += 12; why.push(`${days} days old`); }
+    if (days <= 7) { s += 25; why.push(`brand new (${days} ${days === 1 ? "day" : "days"})`); }
+    else if (days <= 30) { s += 18; why.push(`${days} days old`); }
+    else if (days <= 90) { s += 10; why.push(`${days} days old`); }
   }
   if (c.trucks === 1) { s += 25; why.push("1 truck"); }
-  else if (c.trucks >= 2 && c.trucks <= 3) { s += 22; why.push(`${c.trucks} trucks`); }
-  else if (c.trucks >= 4 && c.trucks <= 10) { s += 10; why.push(`${c.trucks} trucks`); }
+  else if (c.trucks >= 2 && c.trucks <= 3) { s += 20; why.push(`${c.trucks} trucks`); }
+  else if (c.trucks >= 4 && c.trucks <= 10) { s += 8; why.push(`${c.trucks} trucks`); }
   else if (c.trucks > 10) why.push(`${c.trucks} trucks (big fleet)`);
   if (c.phone) s += 12;
-  if (c.email) s += 10;
+  if (c.email) s += 8;
   why.push(c.phone && c.email ? "phone + email" : c.phone ? "phone only" : "no phone");
+  if (c.cell && digits(c.cell) !== digits(c.phone)) { s += 5; why.push("cell number too"); }
   if (c.people.length) s += 5;
   const eq = c.equipment.find(e => POPULAR_EQUIP.includes(e));
-  if (eq) { s += 8; why.push(eq.toLowerCase()); }
+  if (eq) { s += 10; why.push(eq.toLowerCase()); } else why.push("equipment unknown");
   if (c.cdl > 0 || c.equipment.includes("Box truck")) s += 5;
   s = Math.min(100, s);
-  return { s, level: s >= 70 ? "hot" : s >= 45 ? "warm" : "cold", why };
+  return { s, level: s >= 85 ? "hot" : s >= 75 ? "warm" : "cold", why };
 }
 const HEAT = { hot: "🔥 Hot", warm: "🙂 Warm", cold: "❄ Cold" };
 function heatBadge(c) {

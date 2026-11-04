@@ -265,6 +265,42 @@ td.c-meta { display: none; }
 .objections div { border-left: 3px solid var(--line); padding-left: 12px; }
 .objections b { display: block; }
 
+/* Local time */
+.lt { display: inline-block; font-size: 11.5px; font-weight: 600; white-space: nowrap; margin-top: 3px; }
+.lt.good { color: var(--ok); }
+.lt.edge { color: var(--warn); }
+.lt.bad { color: var(--bad); }
+
+/* Bulk select */
+th.c-sel, td.c-sel { width: 34px; padding-right: 0; }
+td.c-sel input, th.c-sel input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 2px 0 0; }
+.bulkbar { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 48px); z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; background: var(--ink); color: var(--bg); border-radius: 10px; box-shadow: var(--shadow); }
+.bulkbar b { font-variant-numeric: tabular-nums; }
+.bulkbar .btn { background: transparent; color: var(--bg); border-color: rgba(255,255,255,.35); }
+.bulkbar .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+@media (max-width: 760px) { #results td.c-sel { display: none; } }
+
+/* Numbers */
+.numbers { padding: 16px; display: grid; gap: 14px; }
+.numbers header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.numbers h3 { margin: 0; font-size: 15px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.stat { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.stat .n { font-family: var(--font-display); font-size: 28px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.bars { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 6px; align-items: end; height: 120px; padding-top: 16px; border-bottom: 1px solid var(--line); }
+.bars div { position: relative; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; }
+.bars div.zero { background: var(--line); }
+.bars div span { position: absolute; top: -16px; left: 0; right: 0; text-align: center; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.barlabels { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 6px; font-size: 10.5px; color: var(--muted); text-align: center; }
+
+/* Brokers */
+.rate-good { background: var(--ok-soft); color: var(--ok); }
+.rate-ok { background: var(--warn-soft); color: var(--warn); }
+.rate-avoid { background: var(--bad-soft); color: var(--bad); }
+dialog.form { margin: auto; height: auto; max-height: calc(100% - 32px); width: min(560px, calc(100% - 32px)); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.3); overflow: auto; }
+dialog.form .sheet { padding: 20px; }
+
 /* Carrier detail panel */
 dialog { border: 0; padding: 0; margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(560px, 100%); max-width: 100%; background: var(--surface); color: var(--ink); box-shadow: -12px 0 40px rgba(0,0,0,.2); }
 dialog::backdrop { background: rgba(10, 20, 15, .45); }
@@ -281,6 +317,12 @@ dialog::backdrop { background: rgba(10, 20, 15, .45); }
 .pickrow { display: flex; flex-wrap: wrap; gap: 6px; }
 .pickrow button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
 .pickrow button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.pickrow.big { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.pickrow.big button { border-radius: 10px; padding: 12px 10px; font-size: 14px; font-weight: 600; text-align: left; }
+.pickrow.big button:hover { border-color: var(--accent); background: var(--accent-soft); }
+details.fold { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+details.fold summary { list-style: none; }
+details.fold summary::-webkit-details-marker { display: none; }
 .sheet section { display: grid; gap: 8px; }
 .sheet h4 { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
 .kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 6px 12px; margin: 0; }
@@ -319,6 +361,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <a href="#today" data-view="today">Today <span class="count" id="navToday">0</span></a>
     <a href="#pipeline" data-view="pipeline">Pipeline <span class="count" id="navPipe">0</span></a>
     <a href="#customers" data-view="customers">Customers <span class="count" id="navCust">0</span></a>
+    <a href="#brokers" data-view="brokers">Brokers <span class="count" id="navBrokers">0</span></a>
     <a href="#scripts" data-view="scripts">Scripts &amp; emails</a>
     <a href="#guide" data-view="guide">Dispatch guide</a>
   </div>
@@ -420,6 +463,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       </div>
       <select id="sort" aria-label="Sort">
         <option value="recent">Newest first</option>
+        <option value="calltime">Good time to call now</option>
         <option value="trucks">Most trucks</option>
         <option value="name">Name A–Z</option>
         <option value="state">State</option>
@@ -428,13 +472,19 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <button class="btn" id="saveCsv" type="button">Download CSV</button>
     </div>
     <div class="pills" id="stagetabs" role="group" aria-label="Pipeline stage"></div>
+    <div class="bulkbar" id="bulkbar" hidden>
+      <span><b id="selCount">0</b> selected</span>
+      <button class="btn primary" type="button" id="bulkAdd">Add to pipeline</button>
+      <button class="btn" type="button" id="bulkPhones">Copy phone numbers</button>
+      <button class="btn" type="button" id="bulkClear">Clear selection</button>
+    </div>
     <div class="status" id="status" hidden><span class="bar"><i></i></span><span id="statusText"></span></div>
     <div class="error" id="error" hidden></div>
     <div class="card tablebox" id="results">
       <table>
         <thead>
           <tr>
-            <th>Pipeline</th><th>Carrier</th><th>MC status</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
+            <th class="c-sel"><input type="checkbox" id="selAll" aria-label="Select all on this page"></th><th>Pipeline</th><th>Carrier</th><th>MC status</th><th>Owner / contact</th><th>Phone</th><th>Email</th><th>Location</th>
             <th>Fleet</th><th id="dateHead">Authority date</th><th>Equipment</th>
           </tr>
         </thead>
@@ -452,7 +502,40 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <p class="lede">Follow-ups that are due, then new leads you haven't called yet. Set a follow-up on any carrier from its detail panel.</p>
     </div>
     <div class="tiles" id="todayTiles"></div>
+    <div class="card numbers">
+      <header>
+        <h3>Your numbers</h3>
+        <button class="btn small" type="button" id="remindBtn">🔔 Turn on follow-up reminders</button>
+      </header>
+      <div class="stats" id="stats"></div>
+      <div>
+        <div class="label">Calls per day, last 14 days</div>
+        <div class="bars" id="bars"></div>
+        <div class="barlabels" id="barlabels"></div>
+      </div>
+    </div>
     <div id="todayLists" class="view"></div>
+  </section>
+
+  <!-- ============ BROKERS ============ -->
+  <section class="view" id="view-brokers" hidden>
+    <div>
+      <h2 class="title">Brokers</h2>
+      <p class="lede">Keep the brokers you book with: who to call, how fast they pay, and whether to work with them again.</p>
+    </div>
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+        <input id="bq" type="search" placeholder="Filter brokers…" autocomplete="off" aria-label="Filter brokers">
+      </div>
+      <button class="btn primary" type="button" id="addBroker">+ Add broker</button>
+    </div>
+    <div class="card tablebox">
+      <table style="min-width:900px">
+        <thead><tr><th>Broker</th><th>Contact</th><th>Phone</th><th>Email</th><th>Pays in</th><th>Credit</th><th>Rating</th><th>Notes</th></tr></thead>
+        <tbody id="brokerRows"></tbody>
+      </table>
+    </div>
   </section>
 
   <!-- ============ PIPELINE ============ -->
@@ -570,11 +653,32 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <footer class="src">
     <p>Every carrier in search results has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
     <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data.</p>
-    <p>Your pipeline, notes, follow-ups and templates are saved in this browser only. Use Download backup under Scripts &amp; emails to keep a copy.</p>
+    <p>Local times use each state's main time zone; a few states span two zones.</p>
+    <p>Your pipeline, notes, follow-ups, brokers and templates are saved in this browser only. Use Download backup under Scripts &amp; emails to keep a copy.</p>
   </footer>
 </main>
 
 <dialog id="detail" aria-label="Carrier details"><div class="sheet" id="sheet"></div></dialog>
+<dialog id="brokerDlg" class="form" aria-label="Broker">
+  <form class="sheet" id="brokerForm" method="dialog" novalidate>
+    <header><div><h3 id="brokerTitle">Add broker</h3></div><button class="close" type="button" aria-label="Close" data-bclose>×</button></header>
+    <div class="fields3">
+      <label class="field"><span>Broker name *</span><input id="b_name" required placeholder="e.g. Coyote Logistics"></label>
+      <label class="field"><span>MC #</span><input id="b_mc" class="mono" placeholder="MC123456"></label>
+      <label class="field"><span>Contact person</span><input id="b_contact" placeholder="Sarah (carrier sales)"></label>
+      <label class="field"><span>Phone</span><input id="b_phone" class="mono" placeholder="(312) 555-0100"></label>
+      <label class="field"><span>Email</span><input id="b_email" type="email" placeholder="loads@broker.com"></label>
+      <label class="field"><span>Pays in (days)</span><input id="b_pay" class="mono" inputmode="numeric" placeholder="30"></label>
+      <label class="field"><span>Credit score</span><input id="b_credit" placeholder="A / 95"></label>
+      <label class="field"><span>Rating</span><select id="b_rating"><option value="good">Good, book again</option><option value="ok">OK, be careful</option><option value="avoid">Avoid</option></select></label>
+    </div>
+    <label class="field"><span>Notes</span><textarea id="b_notes" rows="3" placeholder="Lanes they cover, quick pay fee, detention policy…"></textarea></label>
+    <div class="buttons">
+      <button class="btn primary" type="submit">Save broker</button>
+      <button class="btn danger" type="button" id="b_delete" hidden>Delete</button>
+    </div>
+  </form>
+</dialog>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -666,6 +770,10 @@ Would you like to try one load with us this week?
 [Yes:] Great. I'll email you a short agreement and ask for your MC authority letter, W-9 and insurance certificate.
 [Not now:] No problem. When's a good time to check back?`
   },
+  text: {
+    title: "Text / WhatsApp message", subject: "",
+    body: `Hi {owner}, this is {myName} with {myCompany}. Congrats on the new authority for {company}. I help new carriers find good-paying loads and handle the broker paperwork for {percent}% of the gross, no load no fee. Do you have 5 minutes for a quick call? {myPhone}`
+  },
   intro: {
     title: "Intro email (after no answer)", subject: "Dispatch help for {company}",
     body: `Hi {owner},
@@ -726,12 +834,13 @@ Thanks,
 };
 
 const STORE_KEY = "carrier-scout-crm";
-let db = { carriers: {}, leads: {}, me: {}, templates: {} };
+let db = { carriers: {}, leads: {}, me: {}, templates: {}, brokers: {} };
+const fromSaved = raw => ({ carriers: raw.carriers || {}, leads: raw.leads || {}, me: raw.me || {}, templates: raw.templates || {}, brokers: raw.brokers || {} });
 
 function loadDb() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-    if (raw && typeof raw === "object") db = { carriers: raw.carriers || {}, leads: raw.leads || {}, me: raw.me || {}, templates: raw.templates || {} };
+    if (raw && typeof raw === "object") db = fromSaved(raw);
   } catch {}
   // Carry over statuses and notes from the earlier version of the app.
   try {
@@ -775,6 +884,40 @@ const ICON_COPY = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" st
 const fmtWhen = t => new Date(t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const startOfDay = (d = new Date()) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
 const endOfDay = (d = new Date()) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
+
+/* Each state's main time zone, for "what time is it there?" before calling. */
+const STATE_TZ = {
+  AL: "America/Chicago", AK: "America/Anchorage", AZ: "America/Phoenix", AR: "America/Chicago", CA: "America/Los_Angeles", CO: "America/Denver",
+  CT: "America/New_York", DE: "America/New_York", DC: "America/New_York", FL: "America/New_York", GA: "America/New_York", HI: "Pacific/Honolulu",
+  ID: "America/Boise", IL: "America/Chicago", IN: "America/Indiana/Indianapolis", IA: "America/Chicago", KS: "America/Chicago", KY: "America/New_York",
+  LA: "America/Chicago", ME: "America/New_York", MD: "America/New_York", MA: "America/New_York", MI: "America/Detroit", MN: "America/Chicago",
+  MS: "America/Chicago", MO: "America/Chicago", MT: "America/Denver", NE: "America/Chicago", NV: "America/Los_Angeles", NH: "America/New_York",
+  NJ: "America/New_York", NM: "America/Denver", NY: "America/New_York", NC: "America/New_York", ND: "America/Chicago", OH: "America/New_York",
+  OK: "America/Chicago", OR: "America/Los_Angeles", PA: "America/New_York", RI: "America/New_York", SC: "America/New_York", SD: "America/Chicago",
+  TN: "America/Chicago", TX: "America/Chicago", UT: "America/Denver", VT: "America/New_York", VA: "America/New_York", WA: "America/Los_Angeles",
+  WV: "America/New_York", WI: "America/Chicago", WY: "America/Denver"
+};
+function localTime(st) {
+  const tz = STATE_TZ[st];
+  if (!tz) return null;
+  const now = new Date();
+  const hour = +new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }).format(now);
+  const text = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(now);
+  const fit = hour >= 8 && hour < 18 ? "good" : (hour === 7 || (hour >= 18 && hour < 20)) ? "edge" : "bad";
+  return { hour, text, fit, note: fit === "good" ? "good time to call" : fit === "edge" ? "early/late, keep it short" : hour < 8 ? "too early to call" : "too late to call" };
+}
+const callScore = st => { const t = localTime(st); return !t ? 1 : t.fit === "good" ? 0 : t.fit === "edge" ? 1 : 2; };
+function tzBadge(st, withNote) {
+  const t = localTime(st);
+  return t ? `<span class="lt ${t.fit}" data-tz="${esc(st)}"${withNote ? " data-note" : ""}>🕗 ${esc(t.text)}${withNote ? " · " + t.note : ""}</span>` : "";
+}
+function tickTimes() {
+  document.querySelectorAll("[data-tz]").forEach(el => {
+    const t = localTime(el.dataset.tz); if (!t) return;
+    el.className = "lt " + t.fit;
+    el.textContent = `🕗 ${t.text}${el.hasAttribute("data-note") ? " · " + t.note : ""}`;
+  });
+}
 
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.hidden = false;
@@ -882,11 +1025,11 @@ function removeLead(dot) { delete db.leads[dot]; delete db.carriers[dot]; saveDb
 const tomorrowAt = (h) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, 0, 0, 0); return d; };
 
 const CALL_OUTCOMES = {
-  noanswer:   { label: "No answer",        log: "Called, no answer",            stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => tomorrowAt(10) },
-  voicemail:  { label: "Left voicemail",   log: "Called, left voicemail",       stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 1); return d; } },
-  interested: { label: "Talked: interested", log: "Talked, interested",         stage: l => ["negotiating", "signed"].includes(l.stage) ? l.stage : "interested", follow: () => tomorrowAt(11) },
-  notnow:     { label: "Talked: not now",  log: "Talked, not ready yet",        stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 6); return d; } },
-  no:         { label: "Not interested",   log: "Talked, not interested",       stage: () => "lost", follow: () => null }
+  noanswer:   { label: "📵 No answer",      log: "Called, no answer",            stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => tomorrowAt(10) },
+  voicemail:  { label: "📩 Left voicemail", log: "Called, left voicemail",       stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 1); return d; } },
+  interested: { label: "👍 Interested",     log: "Talked, interested",           stage: l => ["negotiating", "signed"].includes(l.stage) ? l.stage : "interested", follow: () => tomorrowAt(11) },
+  notnow:     { label: "⏳ Call me later",  log: "Talked, not ready yet",        stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 6); return d; } },
+  no:         { label: "👎 Not interested", log: "Talked, not interested",       stage: () => "lost", follow: () => null }
 };
 function logCall(dot, key) {
   const o = CALL_OUTCOMES[key], l = ensureLead(dot);
@@ -904,7 +1047,7 @@ function logCall(dot, key) {
 const state = {
   mode: "date", driver: "both", equipment: new Set(), cargo: new Set(),
   results: [], lastMode: "date", offset: 0, runId: 0, abort: null, lastFilters: null, excluded: {},
-  tab: "all", q: "", shown: SHOW_STEP, view: "find", pq: ""
+  tab: "all", q: "", shown: SHOW_STEP, view: "find", pq: "", bq: "", selected: new Set(), pageDots: []
 };
 
 function setStatus(text) { $("#status").hidden = !text; $("#statusText").textContent = text || ""; }
@@ -1111,6 +1254,7 @@ function matchesQuery(c, q, dot) {
 function sortedResults() {
   const list = [...state.results], by = $("#sort").value;
   if (by === "trucks") list.sort((a, b) => b.c.trucks - a.c.trucks);
+  else if (by === "calltime") list.sort((a, b) => callScore(a.c.state) - callScore(b.c.state) || (b.c.authDate || b.c.added).localeCompare(a.c.authDate || a.c.added));
   else if (by === "name") list.sort((a, b) => a.c.name.localeCompare(b.c.name));
   else if (by === "state") list.sort((a, b) => a.c.state.localeCompare(b.c.state) || a.c.city.localeCompare(b.c.city));
   else list.sort((a, b) => (b.c.authDate || b.c.added).localeCompare(a.c.authDate || a.c.added) || b.dot - a.dot);
@@ -1168,11 +1312,13 @@ function renderFind() {
     const msg = searching ? `<strong>Searching…</strong>Carriers will appear here in a moment.`
       : total ? `<strong>No carriers in this view</strong>Clear the filter box or pick another stage.`
       : `<strong>No active carriers match</strong>Try a wider date range, a nearby city, or fewer filters under More filters.`;
-    body.innerHTML = `<tr><td colspan="10" class="empty">${msg}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11" class="empty">${msg}</td></tr>`;
     $("#showMore").hidden = true;
+    renderBulk();
     return;
   }
   const page = list.slice(0, state.shown);
+  state.pageDots = page.map(x => x.dot);
   body.innerHTML = page.map(({ dot, c }) => {
     const lead = leadOf(dot), s = lead?.stage || "";
     const when = state.lastMode === "date" ? `${esc(fmtDate(c.authDate))}<div class="sub">${esc(c.authEvent)}</div>` : esc(fmtDate(c.added));
@@ -1180,13 +1326,14 @@ function renderFind() {
     const drivers = `${c.drivers} drivers · ${c.cdl ? c.cdl + " CDL" : "non-CDL"}`;
     const last = lead?.log?.find(e => e.kind === "note" || e.kind === "call");
     return `<tr data-i="${dot}" class="${s === "lost" ? "done" : ""}">
+      <td class="c-sel"><input type="checkbox" data-sel="${dot}"${state.selected.has(dot) ? " checked" : ""} aria-label="Select ${esc(c.name)}"></td>
       <td class="c-lead">${stageSelect(dot)}${dueBadge(lead) ? `<div>${dueBadge(lead)}</div>` : ""}${last ? `<span class="lastnote" title="${esc(last.text)}">${esc(last.text)}</span>` : ""}</td>
       <td class="c-carrier"><div class="cname">${esc(c.name)}</div>${c.dba ? `<div class="sub">DBA ${esc(c.dba)}</div>` : ""}<div class="ids">${esc(c.mc)} · DOT ${dot}</div></td>
       <td class="c-status"><span class="pill">● Active</span><div class="sub">MC &amp; USDOT</div></td>
       <td class="c-person">${personCell(c)}</td>
       <td class="c-phone">${phoneCell(c)}</td>
       <td class="email c-email">${c.email ? `<a href="mailto:${esc(c.email)}" data-stop>${esc(c.email)}</a>` : `<span class="sub">–</span>`}</td>
-      <td class="c-loc">${esc(c.city)}, ${esc(c.state)}<div class="sub mono">${esc(c.zip.slice(0, 5))}</div></td>
+      <td class="c-loc">${esc(c.city)}, ${esc(c.state)} <span class="sub mono">${esc(c.zip.slice(0, 5))}</span><div>${tzBadge(c.state)}</div></td>
       <td class="num c-fleet">${fleet}<div class="sub">${drivers}</div></td>
       <td class="c-date" style="white-space:nowrap">${when}</td>
       <td class="c-eq">${c.equipment.slice(0, 3).map(e => `<span class="tag">${esc(e)}</span>`).join("") || `<span class="sub">–</span>`}</td>
@@ -1196,6 +1343,19 @@ function renderFind() {
   const left = list.length - page.length;
   $("#showMore").hidden = left <= 0;
   $("#showMore").textContent = `Show ${Math.min(SHOW_STEP, left)} more (${left} left)`;
+  renderBulk();
+}
+
+/* Bulk selection on the results table */
+function renderBulk() {
+  for (const dot of [...state.selected]) if (!state.results.some(x => x.dot === dot)) state.selected.delete(dot);
+  const n = state.selected.size;
+  $("#bulkbar").hidden = !n;
+  $("#selCount").textContent = n;
+  const page = state.pageDots || [];
+  const all = $("#selAll");
+  all.checked = page.length > 0 && page.every(d => state.selected.has(d));
+  all.indeterminate = !all.checked && page.some(d => state.selected.has(d));
 }
 
 /* ===================== Today view ===================== */
@@ -1206,7 +1366,7 @@ function todayItem(x, kind) {
   const { dot, l, c } = x;
   return `<div class="item" data-open="${dot}">
     <div class="who"><div class="cname">${esc(c.name)}</div><div class="sub">${c.people[0] ? "Ask for " + esc(c.people[0]) + " · " : ""}${esc(c.city)}, ${esc(c.state)} · ${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}</div>
-      <div><span class="chipstage st-${l.stage}">${STAGE_LABEL[l.stage]}</span> ${dueBadge(l)}</div></div>
+      <div><span class="chipstage st-${l.stage}">${STAGE_LABEL[l.stage]}</span> ${dueBadge(l)} ${tzBadge(c.state, true)}</div></div>
     <div>${phoneCell(c)}${l.log[0] ? `<span class="lastnote" style="max-width:260px">${esc(l.log[0].text)}</span>` : ""}</div>
     <div class="acts">
       ${c.phone ? `<a class="btn small" href="${telHref(c.phone)}" data-stop>Call</a>` : ""}
@@ -1234,6 +1394,94 @@ function renderToday() {
     ? `<div class="card empty"><strong>Your call list is empty</strong>Go to <a href="#find">Find carriers</a> and use "+ Add to pipeline" on carriers you want to call. They'll show up here.</div>`
     : section("Overdue", over, "due", "Nothing overdue. Nice.") + section("Due today", today, "due", "No more follow-ups today.") +
       section("New leads to call", fresh.slice(0, 50), "new", "No uncalled leads. Add more from Find carriers.") + section("Coming up (next 7 days)", soon, "due", "Nothing scheduled this week.");
+  renderNumbers();
+}
+
+/* Activity numbers from every carrier's log. */
+function renderNumbers() {
+  const events = Object.values(db.leads).flatMap(l => l.log || []);
+  const calls = events.filter(e => e.kind === "call");
+  const since = days => startOfDay(new Date(Date.now() - days * 864e5)).getTime();
+  const today0 = startOfDay().getTime();
+  const count = (list, from) => list.filter(e => e.t >= from).length;
+  const talked = calls.filter(e => e.text.startsWith("Talked"));
+  const moved = s => events.filter(e => e.kind === "stage" && e.text === `Moved to ${STAGE_LABEL[s]}`);
+  const leads = Object.values(db.leads);
+  const signedTotal = leads.filter(l => l.stage === "signed").length;
+  const rate = leads.length ? Math.round(signedTotal / leads.length * 1000) / 10 : 0;
+  const stats = [
+    [count(calls, today0), "Calls today"],
+    [count(calls, since(6)), "Calls, last 7 days"],
+    [count(talked, since(6)), "Conversations, 7 days"],
+    [count(moved("interested"), since(6)), "New interested, 7 days"],
+    [count(moved("signed"), since(29)), "Signed, last 30 days"],
+    [`${rate}%`, `Signed out of ${leads.length} in pipeline`]
+  ];
+  $("#stats").innerHTML = stats.map(([n, k]) => `<div class="stat"><div class="n">${n}</div><div class="k">${k}</div></div>`).join("");
+  const days = Array.from({ length: 14 }, (_, i) => startOfDay(new Date(Date.now() - (13 - i) * 864e5)));
+  const perDay = days.map(d => calls.filter(e => e.t >= d.getTime() && e.t < d.getTime() + 864e5).length);
+  const max = Math.max(1, ...perDay);
+  $("#bars").innerHTML = perDay.map((n, i) => `<div class="${n ? "" : "zero"}" style="height:${Math.max(2, Math.round(n / max * 100))}%" title="${days[i].toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}: ${n} calls"><span>${n || ""}</span></div>`).join("");
+  $("#barlabels").innerHTML = days.map(d => `<span>${d.toLocaleDateString("en-US", { weekday: "narrow" })}</span>`).join("");
+  const perm = "Notification" in window ? Notification.permission : "unsupported";
+  $("#remindBtn").textContent = perm === "granted" ? "🔔 Reminders on" : perm === "denied" ? "🔕 Reminders blocked in browser" : "🔔 Turn on follow-up reminders";
+}
+
+/* ===================== Follow-up reminders ===================== */
+/* While the app is open in a tab, a follow-up that comes due shows a browser notification (if allowed) and an in-page toast. */
+function checkReminders() {
+  const now = Date.now();
+  for (const [dot, l] of Object.entries(db.leads)) {
+    if (!l.followUp || l.notified === l.followUp) continue;
+    const t = new Date(l.followUp).getTime();
+    if (t > now || now - t > 12 * 36e5) continue;
+    const c = carrierFor(+dot);
+    l.notified = l.followUp;
+    if (!c) continue;
+    const body = [c.people[0] && `Ask for ${c.people[0]}`, fmtPhone(c.phone), l.log.find(e => e.kind === "note")?.text].filter(Boolean).join(" · ");
+    toast(`⏰ Time to call ${titleCase(c.name)}`);
+    if ("Notification" in window && Notification.permission === "granted") {
+      try {
+        const n = new Notification(`Call ${titleCase(c.name)}`, { body, tag: "follow-" + dot });
+        n.onclick = () => { window.focus(); openDetail(+dot); n.close(); };
+      } catch {}
+    }
+  }
+  saveDb();
+}
+
+/* ===================== Brokers ===================== */
+const RATINGS = { good: "Good", ok: "Careful", avoid: "Avoid" };
+function renderBrokers() {
+  const q = state.bq.toLowerCase();
+  const list = Object.values(db.brokers)
+    .filter(b => !q || [b.name, b.mc, b.contact, b.phone, b.email, b.notes].join(" ").toLowerCase().includes(q))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const body = $("#brokerRows");
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="8" class="empty"><strong>${Object.keys(db.brokers).length ? "No brokers match" : "No brokers yet"}</strong>${Object.keys(db.brokers).length ? "Clear the filter box." : "Click \"+ Add broker\" to save the brokers you book loads with."}</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(b => `<tr data-broker="${esc(b.id)}" style="cursor:pointer">
+    <td><div class="cname">${esc(b.name)}</div>${b.mc ? `<div class="ids">${esc(b.mc)}</div>` : ""}</td>
+    <td>${esc(b.contact || "–")}</td>
+    <td>${b.phone ? `<span class="phone"><a href="${telHref(b.phone)}" data-stop>${esc(fmtPhone(b.phone))}</a><button class="icon" type="button" data-copy="${esc(fmtPhone(b.phone))}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : "–"}</td>
+    <td class="email">${b.email ? `<a href="mailto:${esc(b.email)}" data-stop>${esc(b.email)}</a>` : "–"}</td>
+    <td class="num">${b.pay ? esc(b.pay) + " days" : "–"}</td>
+    <td>${esc(b.credit || "–")}</td>
+    <td><span class="chipstage rate-${b.rating || "good"}">${RATINGS[b.rating || "good"]}</span></td>
+    <td class="sub" style="max-width:260px">${esc(b.notes || "")}</td>
+  </tr>`).join("");
+}
+const BROKER_FIELDS = ["name", "mc", "contact", "phone", "email", "pay", "credit", "rating", "notes"];
+function openBroker(id) {
+  const b = id ? db.brokers[id] : null, dlg = $("#brokerDlg");
+  dlg.dataset.id = id || "";
+  $("#brokerTitle").textContent = b ? "Edit broker" : "Add broker";
+  BROKER_FIELDS.forEach(k => ($("#b_" + k).value = b?.[k] || (k === "rating" ? "good" : "")));
+  const del = $("#b_delete"); del.hidden = !b; del.textContent = "Delete"; delete del.dataset.armed;
+  dlg.showModal();
+  setTimeout(() => $("#b_name").focus(), 0);
 }
 
 /* ===================== Pipeline view ===================== */
@@ -1294,7 +1542,7 @@ function renderScripts() {
     const t = template(k);
     return `<div class="card panel">
       <h3>${esc(t.title)}</h3>
-      ${k !== "script" ? `<label class="field"><span>Subject</span><input data-tpl="${k}" data-part="subject" value="${esc(t.subject)}"></label>` : ""}
+      ${k !== "script" && k !== "text" ? `<label class="field"><span>Subject</span><input data-tpl="${k}" data-part="subject" value="${esc(t.subject)}"></label>` : ""}
       <label class="field"><span>${k === "script" ? "Script" : "Message"}</span><textarea data-tpl="${k}" data-part="body" rows="${k === "script" ? 18 : 14}">${esc(t.body)}</textarea></label>
     </div>`;
   }).join("");
@@ -1314,7 +1562,9 @@ function renderDetail() {
   if (!c) return;
   const lead = leadOf(dot), s = lead?.stage || "", cu = lead?.customer || {};
   const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : "";
-  const phone = fmtPhone(c.phone), cell = fmtPhone(c.cell);
+  const phone = fmtPhone(c.phone), cell = fmtPhone(c.cell), d10 = digits(c.phone).slice(-10);
+  const textMsg = encodeURIComponent(fillTemplate(template("text").body, c));
+  const waHref = `https://wa.me/1${d10}?text=${textMsg}`, smsHref = `sms:+1${d10}?&body=${textMsg}`;
   const emails = ["intro", "followup", "onboarding"].map(k => {
     const t = template(k);
     const href = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(fillTemplate(t.subject, c))}&body=${encodeURIComponent(fillTemplate(t.body, c))}` : "";
@@ -1331,43 +1581,28 @@ function renderDetail() {
     </header>
 
     <div class="callcard">
-      <div><div class="sub">Ask for</div><div class="who">${c.people.length ? esc(c.people.join(" or ")) : "The owner (no name listed)"}</div></div>
+      <div><div class="sub">Ask for</div><div class="who">${c.people.length ? esc(c.people.join(" or ")) : "The owner (no name listed)"}</div>${tzBadge(c.state, true)}</div>
       <div class="actions">
-        ${phone ? `<a class="btn primary" href="${telHref(c.phone)}">Call ${esc(phone)}</a><button class="btn" type="button" data-copy="${esc(phone)}">Copy number</button>` : `<span class="sub">No phone number on file</span>`}
+        ${phone ? `<a class="btn primary" href="${telHref(c.phone)}">📞 Call ${esc(phone)}</a>
+          <a class="btn" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn" href="${smsHref}">Text</a>
+          <button class="btn" type="button" data-copy="${esc(phone)}">Copy number</button>` : `<span class="sub">No phone number on file</span>`}
         ${cell && cell !== phone ? `<a class="btn" href="${telHref(c.cell)}">Cell ${esc(cell)}</a>` : ""}
-        ${c.email ? `<button class="btn" type="button" data-copy="${esc(c.email)}">Copy email</button>` : ""}
       </div>
-      <div class="sub">${c.email ? esc(c.email) : "No email on file"}</div>
+      <div class="sub">${c.email ? `${esc(c.email)} <button class="btn small" type="button" data-copy="${esc(c.email)}">Copy email</button>` : "No email on file"}</div>
     </div>
 
     <section>
-      <h4>Log this call</h4>
-      <div class="pickrow">${Object.entries(CALL_OUTCOMES).map(([k, o]) => `<button type="button" data-call="${k}">${o.label}</button>`).join("")}</div>
-      <p class="note">Logging a call moves the stage forward and sets the next follow-up for you.</p>
+      <h4>After the call, tap what happened</h4>
+      <div class="pickrow big">${Object.entries(CALL_OUTCOMES).map(([k, o]) => `<button type="button" data-call="${k}">${o.label}</button>`).join("")}</div>
+      <div class="sub">${lead?.followUp ? `Next call: ${dueBadge(lead)}` : "The app sets your next call for you."} ${lead ? `· Stage: <span class="chipstage st-${s}">${STAGE_LABEL[s]}</span>` : ""}</div>
     </section>
 
     <section>
-      <h4>Pipeline stage</h4>
-      <div class="pickrow">${STAGES.map(([k, l]) => `<button type="button" data-setstage="${k}" aria-pressed="${k === s}">${l}</button>`).join("")}</div>
-    </section>
-
-    <section>
-      <h4>Follow-up</h4>
-      <div>${lead?.followUp ? dueBadge(lead) : `<span class="sub">No follow-up set</span>`}</div>
-      <div class="pickrow">
-        <button type="button" data-follow="2h">In 2 hours</button>
-        <button type="button" data-follow="tom">Tomorrow 10 AM</button>
-        <button type="button" data-follow="3d">In 3 days</button>
-        <button type="button" data-follow="1w">Next week</button>
-        ${lead?.followUp ? `<button type="button" data-follow="clear">Clear</button>` : ""}
-      </div>
-      <label class="field" style="max-width:260px"><span>Or pick a date and time</span><input type="datetime-local" id="followAt"></label>
-    </section>
-
-    <section>
-      <h4>Notes &amp; activity</h4>
-      <div class="addnote"><input id="noteInput" placeholder="e.g. Has 2 reefers, runs TX to GA, wants $2.50/mile"><button class="btn" type="button" id="addNote">Add</button></div>
-      <div class="log">${(lead?.log || []).map(e => `<div><time>${esc(fmtWhen(e.t))}</time>${esc(e.text)}</div>`).join("") || `<span class="sub">No activity yet.</span>`}</div>
+      <h4>Notes</h4>
+      <div class="addnote"><input id="noteInput" placeholder="e.g. 2 reefers, runs Texas to Georgia"><button class="btn" type="button" id="addNote">Save note</button></div>
+      <div class="log">${(lead?.log || []).slice(0, 3).map(e => `<div><time>${esc(fmtWhen(e.t))}</time>${esc(e.text)}</div>`).join("") || `<span class="sub">No notes yet.</span>`}</div>
+      ${(lead?.log || []).length > 3 ? `<details class="fold"><summary class="sub">Show all ${lead.log.length}</summary><div class="log">${lead.log.slice(3).map(e => `<div><time>${esc(fmtWhen(e.t))}</time>${esc(e.text)}</div>`).join("")}</div></details>` : ""}
     </section>
 
     ${s === "signed" ? `<section>
@@ -1384,14 +1619,27 @@ function renderDetail() {
       <div class="checklist">${ONBOARDING.map(([k, l]) => `<label class="toggle"><input type="checkbox" data-check="${k}"${cu.checks?.[k] ? " checked" : ""}> ${l}</label>`).join("")}</div>
     </section>` : ""}
 
-    <section>
-      <details class="fold"><summary>Call script</summary><pre class="script">${esc(fillTemplate(template("script").body, c))}</pre></details>
-      <div class="label" style="margin-top:6px">Emails</div>
-      ${emails}
-      <p class="note">Email buttons open your email app with the message filled in. Edit templates under Scripts &amp; emails.</p>
-    </section>
+    <details class="fold"><summary>⏰ Choose next call time yourself</summary>
+      <div class="pickrow" style="margin-top:8px">
+        <button type="button" data-follow="2h">In 2 hours</button>
+        <button type="button" data-follow="tom">Tomorrow 10 AM</button>
+        <button type="button" data-follow="3d">In 3 days</button>
+        <button type="button" data-follow="1w">Next week</button>
+        ${lead?.followUp ? `<button type="button" data-follow="clear">No next call</button>` : ""}
+      </div>
+      <label class="field" style="max-width:260px;margin-top:8px"><span>Or pick a date and time</span><input type="datetime-local" id="followAt"></label>
+    </details>
 
-    <section><h4>Company</h4><dl class="kv">
+    <details class="fold"><summary>📋 Call script</summary><pre class="script" style="margin-top:8px">${esc(fillTemplate(template("script").body, c))}</pre></details>
+
+    <details class="fold"><summary>✉ Send email</summary><div style="display:grid;gap:6px;margin-top:8px">${emails}
+      <p class="note">Opens your email app with the message ready. Change the wording under Scripts &amp; emails.</p></div></details>
+
+    <details class="fold"><summary>🔀 Change stage</summary>
+      <div class="pickrow" style="margin-top:8px">${STAGES.map(([k, l]) => `<button type="button" data-setstage="${k}" aria-pressed="${k === s}">${l}</button>`).join("")}</div>
+    </details>
+
+    <details class="fold"><summary>🏢 Company details</summary><dl class="kv" style="margin-top:8px">
       ${row("Address", `${esc(c.street)}<br>${esc(c.city)}, ${esc(c.state)} ${esc(c.zip)}`)}
       ${row("Authority type", (c.authTypes || []).map(esc).join("<br>"))}
       ${row(c.authEvent ? `${esc(c.authEvent)} on` : "", c.authDate && esc(fmtDate(c.authDate)))}
@@ -1409,7 +1657,7 @@ function renderDetail() {
         <a href="https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${dot}" target="_blank" rel="noopener">SAFER snapshot ↗</a>
         <a href="https://ai.fmcsa.dot.gov/SMS/Carrier/${dot}/CarrierProfile.aspx" target="_blank" rel="noopener">SMS safety profile ↗</a>
       </div>
-    </section>
+    </details>
 
     ${lead ? `<section><button class="btn danger" type="button" id="removeLead">Remove from pipeline</button></section>` : ""}`;
 }
@@ -1433,7 +1681,7 @@ function saveFilters(f) { try { localStorage.setItem("carrier-scout-filters", JS
 function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-scout-filters") || "null"); } catch { return null; } }
 
 /* ===================== navigation ===================== */
-const VIEWS = ["find", "today", "pipeline", "customers", "scripts", "guide"];
+const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide"];
 function showView(v) {
   if (!VIEWS.includes(v)) v = "find";
   state.view = v;
@@ -1449,6 +1697,8 @@ function renderCounts() {
   $("#navToday").textContent = due; $("#navToday").classList.toggle("hot", over);
   $("#navPipe").textContent = leads.filter(x => !["signed", "lost"].includes(x.l.stage)).length;
   $("#navCust").textContent = leads.filter(x => x.l.stage === "signed").length;
+  $("#navBrokers").textContent = Object.keys(db.brokers).length;
+  document.title = due ? `(${due}) Carrier Scout` : "Carrier Scout";
 }
 function renderAll() {
   renderCounts();
@@ -1456,6 +1706,7 @@ function renderAll() {
   if (state.view === "today") renderToday();
   if (state.view === "pipeline") renderPipeline();
   if (state.view === "customers") renderCustomers();
+  if (state.view === "brokers") renderBrokers();
   if (state.view === "scripts") renderScripts();
   if ($("#detail").open) renderDetail();
 }
@@ -1537,11 +1788,34 @@ function init() {
   // Results table
   const rows = $("#rows");
   rows.addEventListener("change", e => {
+    const box = e.target.closest("[data-sel]");
+    if (box) { box.checked ? state.selected.add(+box.dataset.sel) : state.selected.delete(+box.dataset.sel); renderBulk(); return; }
     const sel = e.target.closest("[data-stage]"); if (!sel || !sel.value) return;
     setStage(+sel.dataset.stage, sel.value);
     toast(`${STAGE_LABEL[sel.value]}: saved to your pipeline`);
     renderAll();
   });
+
+  $("#selAll").addEventListener("change", e => {
+    (state.pageDots || []).forEach(d => e.target.checked ? state.selected.add(d) : state.selected.delete(d));
+    renderFind();
+  });
+  $("#bulkAdd").addEventListener("click", () => {
+    let added = 0;
+    for (const dot of state.selected) if (!stageOf(dot)) { setStage(dot, "new", true); added++; }
+    saveDb();
+    const skipped = state.selected.size - added;
+    state.selected.clear();
+    toast(`Added ${added} to your pipeline${skipped ? ` (${skipped} were already in it)` : ""}`);
+    renderAll();
+  });
+  $("#bulkPhones").addEventListener("click", () => {
+    const lines = state.results.filter(x => state.selected.has(x.dot) && x.c.phone)
+      .map(x => `${fmtPhone(x.c.phone)}\t${x.c.people[0] || ""}\t${x.c.name}`);
+    if (!lines.length) { toast("None of the selected carriers has a phone number."); return; }
+    copyText(lines.join("\n"), `Copied ${lines.length} phone numbers`);
+  });
+  $("#bulkClear").addEventListener("click", () => { state.selected.clear(); renderFind(); });
 
   // Shared clicks: copy buttons, opening carriers, quick actions
   document.addEventListener("click", e => {
@@ -1551,7 +1825,7 @@ function init() {
     const quick = e.target.closest("[data-quick]");
     if (quick) {
       const dot = +quick.dataset.dot, k = quick.dataset.quick;
-      if (k === "done") { const l = ensureLead(dot); l.followUp = null; l.log.unshift({ t: Date.now(), kind: "call", text: "Follow-up done" }); saveDb(); toast("Follow-up cleared"); }
+      if (k === "done") { const l = ensureLead(dot); l.followUp = null; l.log.unshift({ t: Date.now(), kind: "followup", text: "Follow-up done" }); saveDb(); toast("Follow-up cleared"); }
       else { const f = logCall(dot, k); toast(f ? `Logged. Next follow-up ${fmtWhen(f)}` : "Logged"); }
       renderAll(); return;
     }
@@ -1630,7 +1904,7 @@ function init() {
     try {
       const data = JSON.parse(await file.text());
       if (!data || typeof data.leads !== "object") throw new Error();
-      db = { carriers: data.carriers || {}, leads: data.leads || {}, me: data.me || {}, templates: data.templates || {} };
+      db = fromSaved(data);
       saveDb(); renderAll(); toast(`Restored ${Object.keys(db.leads).length} carriers from backup`);
     } catch { toast("That file isn't a Carrier Scout backup."); }
     e.target.value = "";
@@ -1640,9 +1914,42 @@ function init() {
   $("#copyCsv").addEventListener("click", () => { const n = visibleResults().length; if (!n) { toast("Nothing to copy yet. Run a search first."); return; } copyText(csv(), `Copied ${n} carriers as CSV`); });
   $("#saveCsv").addEventListener("click", () => { if (!visibleResults().length) { toast("Nothing to download yet. Run a search first."); return; } download(`carriers-${localIso(new Date())}.csv`, "﻿" + csv(), "text/csv;charset=utf-8"); });
 
+  // Reminders
+  $("#remindBtn").addEventListener("click", async () => {
+    if (!("Notification" in window)) { toast("This browser can't show notifications. You'll still get in-page alerts while the app is open."); return; }
+    if (Notification.permission === "denied") { toast("Notifications are blocked for this site. Allow them in your browser's site settings."); return; }
+    const p = await Notification.requestPermission();
+    toast(p === "granted" ? "Reminders on. Keep this tab open to get them." : "Reminders not allowed. You'll still get in-page alerts.");
+    renderNumbers();
+  });
+
+  // Brokers
+  $("#addBroker").addEventListener("click", () => openBroker(null));
+  let bt; $("#bq").addEventListener("input", e => { clearTimeout(bt); bt = setTimeout(() => { state.bq = e.target.value.trim(); renderBrokers(); }, 150); });
+  $("#brokerRows").addEventListener("click", e => {
+    if (e.target.closest("[data-stop], [data-copy]")) return;
+    const tr = e.target.closest("[data-broker]"); if (tr) openBroker(tr.dataset.broker);
+  });
+  const bd = $("#brokerDlg");
+  bd.addEventListener("click", e => { if (e.target === bd || e.target.closest("[data-bclose]")) bd.close(); });
+  $("#brokerForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const name = $("#b_name").value.trim();
+    if (!name) { toast("Enter the broker's name."); $("#b_name").focus(); return; }
+    const id = bd.dataset.id || "b" + Date.now().toString(36);
+    const rec = { id, added: db.brokers[id]?.added || Date.now(), updated: Date.now() };
+    BROKER_FIELDS.forEach(k => (rec[k] = $("#b_" + k).value.trim()));
+    db.brokers[id] = rec; saveDb(); bd.close(); toast(`Saved ${name}`); renderAll();
+  });
+  $("#b_delete").addEventListener("click", e => {
+    if (!e.target.dataset.armed) { e.target.dataset.armed = "1"; e.target.textContent = "Click again to delete"; return; }
+    delete db.brokers[bd.dataset.id]; saveDb(); bd.close(); toast("Broker deleted"); renderAll();
+  });
+
   window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
   showView(location.hash.slice(1) || "find");
-  setInterval(renderCounts, 60000);
+  setInterval(() => { renderCounts(); tickTimes(); checkReminders(); }, 30000);
+  checkReminders();
   backfillCarriers();
   run(false);
 }

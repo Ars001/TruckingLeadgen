@@ -350,7 +350,7 @@ td.c-sel input, th.c-sel input { width: 16px; height: 16px; accent-color: var(--
 .bulkbar b { font-variant-numeric: tabular-nums; }
 .bulkbar .btn { background: transparent; color: var(--bg); border-color: rgba(255,255,255,.35); }
 .bulkbar .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-@media (max-width: 760px) { #results td.c-sel { display: none; } }
+@media (max-width: 760px) { #results.selecting td.c-sel { display: block; grid-column: 1 / -1; } }
 
 /* Numbers */
 .numbers { padding: 16px; display: grid; gap: 14px; }

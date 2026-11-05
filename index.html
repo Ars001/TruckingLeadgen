@@ -533,7 +533,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </a>
     <div class="bandright">
       <span class="live"><i></i> Live FMCSA data · updated daily</span>
-      <span class="userchip" id="userChip" hidden>👤 <span id="userName"></span> <button class="btn small" type="button" id="logoutBtn">Log out</button></span>
+      <span class="userchip" id="userChip" hidden>👤 <span id="userName"></span> <span class="pill" id="userPlan" hidden>PRO</span> <button class="btn small" type="button" id="logoutBtn">Log out</button></span>
       <button class="themebtn" type="button" id="themeBtn" aria-label="Switch light or dark theme">☀</button>
     </div>
   </div>
@@ -546,6 +546,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <a href="#pipeline" data-view="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>My leads <span class="count" id="navPipe">0</span></a>
     <a href="#customers" data-view="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Customers <span class="count" id="navCust">0</span></a>
     <a href="#scripts" data-view="scripts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Scripts &amp; settings</a>
+    <a href="#admin" data-view="admin" id="navAdmin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>Admin</a>
     <span class="leadmeter" id="leadMeter" title="Free new leads you can take today. Resets at midnight."><b>0 of 60 leads today</b><span class="track"><i></i></span></span>
     <a href="#guide" data-view="guide" class="navhelp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>Help</a>
   </div>
@@ -901,6 +902,30 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </div>
   </section>
 
+  <!-- ============ ADMIN (owner only) ============ -->
+  <section class="view" id="view-admin" hidden>
+    <div>
+      <h2 class="title">Admin</h2>
+      <p class="lede">Your users, who's active, and Pro plans. Only admins can see this page.</p>
+    </div>
+    <div class="tiles" id="adminTiles"></div>
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+        <input id="aq" type="search" placeholder="Search name, email, WhatsApp…" autocomplete="off" aria-label="Search users">
+      </div>
+      <button class="btn" type="button" id="adminRefresh">↻ Refresh</button>
+      <button class="btn" type="button" id="adminExport">⬇ Download users (Excel)</button>
+    </div>
+    <div class="card tablebox">
+      <table style="min-width:1000px">
+        <thead><tr><th>User</th><th>WhatsApp</th><th>Joined</th><th>Last active</th><th class="num">Leads today</th><th class="num">Saved leads</th><th>Plan</th><th>Change plan</th></tr></thead>
+        <tbody id="adminRows"></tbody>
+      </table>
+    </div>
+    <p class="note">Free: 60 leads and 150 searches a day. Pro: 300 leads and 1,000 searches a day (change in the code under PRO_LIMITS). A plan change shows for the user the next time they open the app.</p>
+  </section>
+
   <!-- ============ SIGN UP / LOG IN ============ -->
   <section class="view" id="view-auth" hidden>
     <div class="authwrap">
@@ -1021,7 +1046,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 </dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <script>
 /* Login and cloud sync. Paste your Supabase project URL and anon/publishable key here; leave empty to run without accounts. */
 const SUPABASE_URL = "https://nxyswoeryavlqamphbrp.supabase.co";
@@ -1444,7 +1469,8 @@ function logCall(dot, key) {
 const state = {
   mode: "date", driver: "both", equipment: new Set(), cargo: new Set(),
   results: [], lastMode: "date", offset: 0, runId: 0, abort: null, lastFilters: null, excluded: {},
-  q: "", shown: SHOW_STEP, view: "find", pq: "", bq: "", selected: new Set(), pageDots: [], callNow: false, hidePipe: false, selecting: false
+  q: "", shown: SHOW_STEP, view: "find", pq: "", bq: "", selected: new Set(), pageDots: [], callNow: false, hidePipe: false, selecting: false,
+  aq: "", isAdmin: false, isPro: false
 };
 
 function setStatus(text) { $("#status").hidden = !text; $("#statusText").textContent = text || ""; }
@@ -1962,7 +1988,10 @@ function fillReady(dots) {
 /* ===================== Daily limits ===================== */
 /* Free daily allowance so dispatchers come back each day: a number of new leads per day (save, first call, export or
    copied phone each take one, and the same carrier only counts once a day), plus a generous search cap. Change the numbers here. */
-const LIMITS = { searchesPerDay: 150, leadsPerDay: 60 };
+const FREE_LIMITS = { searchesPerDay: 150, leadsPerDay: 60 };
+const PRO_LIMITS = { searchesPerDay: 1000, leadsPerDay: 300 };
+const LIMITS = { ...FREE_LIMITS };
+function applyPlanLimits() { Object.assign(LIMITS, state.isPro ? PRO_LIMITS : FREE_LIMITS); renderLimits(); }
 const USAGE_KEY = "cs-usage";
 function usage() {
   const today = localIso(new Date());
@@ -2358,6 +2387,8 @@ const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "
 function showView(v) {
   if (!VIEWS.includes(v) || v === "auth") v = "find";
   if (sb && !session && !["terms", "privacy"].includes(v)) v = "auth";
+  if (v === "admin" && !state.isAdmin) v = "find";
+  if (v === "admin") loadAdmin();
   state.view = v;
   VIEWS.forEach(k => ($("#view-" + k).hidden = k !== v));
   const navKey = v === "brokers" ? "customers" : v;
@@ -2382,6 +2413,7 @@ function renderAll() {
   if (state.view === "pipeline") renderPipeline();
   if (state.view === "customers") renderCustomers();
   if (state.view === "brokers") renderBrokers();
+  if (state.view === "admin") renderAdmin();
   if (state.view === "scripts") renderScripts();
   if ($("#detail").open) renderDetail();
 }
@@ -2749,10 +2781,92 @@ function init() {
   });
   checkReminders();
   renderLimits();
-  if (sb) { wireAuth(); initAuth(); return; }
+  if (sb) { wireAuth(); wireAdmin(); initAuth(); return; }
   backfillCarriers();
   run(false, { auto: true });
 }
+/* ===================== Admin page (owner only) ===================== */
+/* The server only answers admin_list_users / admin_set_plan for accounts marked is_admin, so hiding the page is just for tidiness. */
+let adminUsers = [];
+const isProUser = u => u.plan === "pro" && (!u.pro_until || new Date(u.pro_until) > new Date());
+/* Pakistani numbers like 0300… become 92300… for WhatsApp links. */
+function waNumber(p) {
+  let d = digits(p);
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 11 && d.startsWith("03")) d = "92" + d.slice(1);
+  if (d.length === 10 && d.startsWith("3")) d = "92" + d;
+  return d;
+}
+async function loadAdmin() {
+  if (!sb || !state.isAdmin) return;
+  $("#adminRows").innerHTML = `<tr><td colspan="8" class="empty">Loading users…</td></tr>`;
+  const { data, error } = await sb.rpc("admin_list_users");
+  if (error) { $("#adminRows").innerHTML = `<tr><td colspan="8" class="empty"><strong>Couldn't load users</strong>${esc(error.message)}</td></tr>`; return; }
+  adminUsers = data || [];
+  renderAdmin();
+}
+function renderAdmin() {
+  const now = Date.now(), today = karachiDay();
+  const newSince = ms => adminUsers.filter(u => now - new Date(u.created_at).getTime() < ms).length;
+  const tiles = [
+    [adminUsers.length, "Total users"],
+    [newSince(864e5), "New in last 24 hours"],
+    [newSince(7 * 864e5), "New in last 7 days"],
+    [adminUsers.filter(u => u.last_active === today).length, "Active today"],
+    [adminUsers.reduce((s, u) => s + (u.leads_today || 0), 0), "Leads taken today"],
+    [adminUsers.filter(isProUser).length, "Pro users"]
+  ];
+  $("#adminTiles").innerHTML = tiles.map(([n, k]) => `<div class="card tile"><span class="n">${n}</span><span class="k">${k}</span></div>`).join("");
+  const q = state.aq.toLowerCase();
+  const list = adminUsers.filter(u => !q || [u.full_name, u.email, u.phone].join(" ").toLowerCase().includes(q));
+  const body = $("#adminRows");
+  if (!list.length) { body.innerHTML = `<tr><td colspan="8" class="empty"><strong>${adminUsers.length ? "No users match" : "No users yet"}</strong></td></tr>`; return; }
+  body.innerHTML = list.map(u => {
+    const pro = isProUser(u), wa = waNumber(u.phone);
+    const active = !u.last_active ? "Never" : u.last_active === today ? "Today" : new Date(u.last_active + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return `<tr>
+      <td><div class="who2">${avatar(u.full_name || u.email)}<div><div class="cname">${esc(u.full_name || "–")}</div><div class="sub email">${esc(u.email || "")}</div></div></div></td>
+      <td>${u.phone ? `<span class="phone"><a href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">${esc(u.phone)}</a><button class="icon" type="button" data-copy="${esc(u.phone)}" aria-label="Copy WhatsApp number">${ICON_COPY}</button></span>` : `<span class="sub">–</span>`}</td>
+      <td style="white-space:nowrap">${esc(fmtWhen(u.created_at))}</td>
+      <td>${esc(active)}</td>
+      <td class="num">${u.leads_today || 0}</td>
+      <td class="num">${u.saved_leads || 0}</td>
+      <td>${pro ? `<span class="pill">PRO</span><div class="sub">until ${esc(u.pro_until ? new Date(u.pro_until).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "forever")}</div>` : `<span class="sub">Free</span>`}</td>
+      <td><div class="buttons">
+        <button class="btn small" type="button" data-plan="${esc(u.id)}" data-days="30">+30 days Pro</button>
+        <button class="btn small" type="button" data-plan="${esc(u.id)}" data-days="365">+1 year</button>
+        ${pro ? `<button class="btn small" type="button" data-plan="${esc(u.id)}" data-days="0">Make Free</button>` : ""}
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+async function setPlan(id, days, btn) {
+  if (days === 0 && !btn.dataset.armed) { btn.dataset.armed = "1"; btn.textContent = "Click again to confirm"; return; }
+  btn.disabled = true;
+  const { error } = await sb.rpc("admin_set_plan", { target: id, days });
+  toast(error ? `Couldn't change the plan: ${error.message}` : days ? `Pro added for ${days === 365 ? "1 year" : days + " days"}` : "Moved back to Free");
+  await loadAdmin();
+}
+function adminCsv() {
+  const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const head = ["Name", "Email", "WhatsApp", "Joined", "Last active", "Leads today", "Saved leads", "Plan", "Pro until"];
+  const rows = adminUsers.map(u => [u.full_name, u.email, u.phone, fmtWhen(u.created_at), u.last_active || "", u.leads_today || 0, u.saved_leads || 0,
+    isProUser(u) ? "Pro" : "Free", u.pro_until ? new Date(u.pro_until).toISOString().slice(0, 10) : ""].map(q).join(","));
+  return [head.join(","), ...rows].join("\n");
+}
+function wireAdmin() {
+  let at; $("#aq").addEventListener("input", e => { clearTimeout(at); at = setTimeout(() => { state.aq = e.target.value.trim(); renderAdmin(); }, 150); });
+  $("#adminRefresh").addEventListener("click", loadAdmin);
+  $("#adminExport").addEventListener("click", () => {
+    if (!adminUsers.length) { toast("No users to download yet."); return; }
+    download(`dispatchwala-users-${localIso(new Date())}.csv`, "﻿" + adminCsv(), "text/csv;charset=utf-8");
+  });
+  $("#adminRows").addEventListener("click", e => {
+    const b = e.target.closest("[data-plan]"); if (b) setPlan(b.dataset.plan, +b.dataset.days, b);
+    const c = e.target.closest("[data-copy]"); if (c) copyText(c.dataset.copy, "Copied " + c.dataset.copy);
+  });
+}
+
 /* ===================== Accounts (Supabase) ===================== */
 /* Signed-in users get their saved leads, notes and settings synced to their account, so they work on any device. */
 let cloudTimer = null, cloudFailedOnce = false;
@@ -2782,6 +2896,15 @@ async function onLoggedIn() {
   ]);
   setStatus("");
   cloudUsage = use || { searches: 0, exported: 0 };
+  const [{ data: adm }, { data: prof }] = await Promise.all([
+    sb.rpc("is_admin"),
+    sb.from("profiles").select("plan,pro_until").eq("id", session.user.id).maybeSingle()
+  ]);
+  state.isAdmin = !!adm;
+  state.isPro = isProUser(prof || {});
+  $("#navAdmin").hidden = !state.isAdmin;
+  $("#userPlan").hidden = !state.isPro;
+  applyPlanLimits();
   if (error) toast("Couldn't load your saved leads. Check your internet and refresh.");
   else if (row && row.data && Object.keys(row.data.leads || {}).length + Object.keys(row.data.me || {}).length) {
     db = fromSaved(row.data);
@@ -2803,6 +2926,9 @@ function onLoggedOut() {
   db = { carriers: {}, leads: {}, me: {}, templates: {}, brokers: {} };
   try { localStorage.removeItem(STORE_KEY); } catch {}
   state.results = []; cloudUsage = null;
+  state.isAdmin = false; state.isPro = false; adminUsers = [];
+  $("#navAdmin").hidden = true; $("#userPlan").hidden = true;
+  applyPlanLimits();
   showAuthPanel("signup");
   showView("auth");
 }

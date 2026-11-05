@@ -228,6 +228,8 @@ body.needauth .nav, body.needauth footer.src p:not(:first-child) { display: none
 .tzlegend i { width: 12px; height: 12px; border-radius: 4px; }
 .tzlegend em { font-style: normal; font-weight: 500; color: var(--muted); }
 .tzlegend .good em { color: var(--ok); } .tzlegend .bad em { color: var(--bad); } .tzlegend .edge em { color: var(--warn); }
+.tzlegend .good { border-color: var(--ok); }
+@media (max-width: 560px) { .tzlegend { gap: 6px; } .tzlegend span { font-size: 11.5px; padding: 4px 8px; gap: 5px; } .tzlegend em { display: none; } .tzlegend::after { content: "Green border = good time to call"; width: 100%; font-size: 11px; color: var(--muted); } }
 .stateinfo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
 .tripstops { display: grid; gap: 8px; }
 .tripstop { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
@@ -3076,8 +3078,8 @@ function renderStateInfo() {
 }
 function selectState(st) { mapState = st; drawMap(); renderStateInfo(); }
 
-/* Trip calculator: miles are a road estimate (straight-line distance × 1.2), drive time at 50 mph average. */
-const ROAD_FACTOR = 1.2, AVG_MPH = 50, HOURS_PER_DAY = 11;
+/* Trip calculator: miles are a road estimate (straight-line distance × 1.14, close to real truck routes), drive time at 50 mph average. */
+const ROAD_FACTOR = 1.14, AVG_MPH = 50, HOURS_PER_DAY = 11;
 function haversine(a, b) {
   const R = 3958.8, rad = x => x * Math.PI / 180;
   const dLat = rad(b[2] - a[2]), dLon = rad(b[3] - a[3]);
@@ -3090,7 +3092,7 @@ function renderTripStops() {
     const cls = i === 0 ? "a" : i === n - 1 ? "z" : "";
     const label = i === 0 ? "From" : i === n - 1 ? "To" : "Stop " + i;
     return `<div class="tripstop ${cls}"><b>${i === 0 ? "A" : i === n - 1 ? "B" : i}</b>
-      <label class="field"><input data-stop="${i}" list="dwCities" value="${esc(v)}" placeholder="${label}: city, e.g. ${i === 0 ? "Dallas, TX" : "Atlanta, GA"}" aria-label="${label}" autocomplete="off"></label>
+      <label class="field"><input data-trip="${i}" list="dwCities" value="${esc(v)}" placeholder="${label}: city, e.g. ${i === 0 ? "Dallas, TX" : "Atlanta, GA"}" aria-label="${label}" autocomplete="off"></label>
       ${i > 0 && i < n - 1 ? `<button type="button" data-unstop="${i}" aria-label="Remove stop">×</button>` : "<span></span>"}</div>`;
   }).join("");
   $("#tripAdd").disabled = n >= 6;
@@ -3138,7 +3140,7 @@ function wireMap() {
   renderTripStops(); renderTrip();
   const refresh = () => { renderTrip(); drawMap(); };
   $("#tripStops").addEventListener("input", e => {
-    const i = e.target.dataset.stop; if (i === undefined) return;
+    const i = e.target.dataset.trip; if (i === undefined) return;
     trip.stops[+i] = e.target.value;
     renderTrip();
   });
@@ -3149,7 +3151,7 @@ function wireMap() {
   });
   $("#tripAdd").addEventListener("click", () => {
     trip.stops.splice(trip.stops.length - 1, 0, ""); renderTripStops();
-    $(`[data-stop="${trip.stops.length - 2}"]`).focus();
+    $(`[data-trip="${trip.stops.length - 2}"]`).focus();
   });
   $("#tripSwap").addEventListener("click", () => { trip.stops.reverse(); renderTripStops(); refresh(); });
   $("#tripClear").addEventListener("click", () => { trip.stops = ["", ""]; $("#tripPay").value = ""; renderTripStops(); refresh(); });
@@ -3163,7 +3165,7 @@ function wireMap() {
     const c = findCity(v);
     if (c && !findState(v)) {
       const free = trip.stops.findIndex(s => !s.trim());
-      if (free >= 0) { trip.stops[free] = c[0] + ", " + c[1]; renderTripStops(); renderTrip(); drawMap(); }
+      if (free >= 0) { trip.stops[free] = c[0] + ", " + c[1]; renderTripStops(); renderTrip(); drawMap(); toast(`Added ${c[0]} to your trip`); }
     }
     e.target.value = "";
   });

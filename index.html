@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov https://*.supabase.co wss://*.supabase.co https://api.openrouteservice.org https://api.weather.gov https://agtransport.usda.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov https://*.supabase.co wss://*.supabase.co https://api.heigit.org https://api.weather.gov https://agtransport.usda.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("cs-theme") || "dark"; } catch { document.documentElement.dataset.theme = "dark"; }</script>
 <title>DispatchWala – New MC Carrier Leads & Calling CRM for Truck Dispatchers</title>
@@ -3078,7 +3078,8 @@ function drawMap() {
   const offMap = t.all.some(c => c[1] === "AK" || c[1] === "HI");
   if (r && !offMap) {
     const split = t.empty ? r.wp[1] : 0;
-    const d = pts => "M" + pts.map(([lon, lat]) => projLL(lon, lat).join(",")).join("L");
+    const thin = pts => { const k = Math.ceil(pts.length / 500); return k < 2 ? pts : pts.filter((_, i) => i % k === 0 || i === pts.length - 1); };
+    const d = pts => "M" + thin(pts).map(([lon, lat]) => projLL(lon, lat).join(",")).join("L");
     if (split) lines += `<path class="route empty" d="${d(r.coords.slice(0, split + 1))}"/>`;
     lines += `<path class="route exact" d="${d(r.coords.slice(split))}"/>`;
   } else if (t.ok) {
@@ -3111,7 +3112,7 @@ function selectState(st) { mapState = st; drawMap(); renderStateInfo(); }
 /* ---------- Trip calculator ----------
    Miles: exact truck (HGV) route from openrouteservice.org when ORS_KEY is set; otherwise an estimate
    (straight-line distance × 1.14, close to real truck routes). Drive time at 50 mph average, 11 driving hours a day. */
-const ORS_KEY = ""; // free key from openrouteservice.org (Dashboard → API key)
+const ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjMwYzEyYzUzMTYwZDQ1M2I5ODIzY2MyZjQ3ZmMxZDg4IiwiaCI6Im11cm11cjY0In0="; // free Standard key (HeiGIT dashboard); public by design, regenerate there if misused
 const ROAD_FACTOR = 1.14, AVG_MPH = 50, HOURS_PER_DAY = 11;
 let route = null, weather = null, diesel = null, routeTimer = null;
 function haversine(a, b) {
@@ -3169,14 +3170,27 @@ function renderFuelNote(t) {
 }
 
 /* Exact truck route from openrouteservice (driving-hgv). Returns miles per leg, the road line and where each stop is on it. */
+/* Routes are saved in this browser (last 20 trips), so checking the same trip again doesn't use the free daily quota. */
+function routeCache(key, val) {
+  let c = {};
+  try { c = JSON.parse(localStorage.getItem("dw-routes") || "{}"); } catch {}
+  if (val === undefined) return c[key] || null;
+  c[key] = { ...val, at: Date.now() };
+  const keys = Object.keys(c).sort((a, b) => c[b].at - c[a].at);
+  keys.slice(20).forEach(k => delete c[k]);
+  try { localStorage.setItem("dw-routes", JSON.stringify(c)); } catch {}
+}
 async function fetchRoute(pts) {
-  const res = await fetch("https://api.openrouteservice.org/v2/directions/driving-hgv/geojson", {
+  const res = await fetch("https://api.heigit.org/openrouteservice/v2/directions/driving-hgv/geojson", {
     method: "POST", headers: { Authorization: ORS_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ coordinates: pts.map(c => [c[3], c[2]]), units: "mi", geometry_simplify: true })
   });
-  if (!res.ok) throw new Error("route " + res.status);
+  if (!res.ok) { const e = new Error("route " + res.status); e.status = res.status; throw e; }
   const f = (await res.json()).features[0];
-  return { legs: f.properties.segments.map(s => s.distance), coords: f.geometry.coordinates, wp: f.properties.way_points };
+  const k = Math.ceil(f.geometry.coordinates.length / 800), wp = f.properties.way_points;
+  const keep = (c, i, all) => k < 2 || i % k === 0 || i === all.length - 1 || wp.includes(i);
+  const idx = []; const coords = f.geometry.coordinates.filter((c, i, all) => keep(c, i, all) && idx.push(i)).map(([x, y]) => [+x.toFixed(4), +y.toFixed(4)]);
+  return { legs: f.properties.segments.map(s => s.distance), coords, wp: wp.map(w => idx.indexOf(w)) };
 }
 function scheduleRoute() { clearTimeout(routeTimer); routeTimer = setTimeout(syncRoute, 900); }
 async function syncRoute() {
@@ -3186,8 +3200,9 @@ async function syncRoute() {
     route = { key: t.key, loading: !!ORS_KEY };
     renderTrip();
     if (ORS_KEY) {
-      try { route = { key: t.key, exact: true, ...(await fetchRoute(t.all)) }; }
-      catch { route = { key: t.key, failed: true }; }
+      const saved = routeCache(t.key);
+      try { route = { key: t.key, exact: true, ...(saved || await fetchRoute(t.all)) }; if (!saved) routeCache(t.key, { legs: route.legs, coords: route.coords, wp: route.wp }); }
+      catch (e) { route = { key: t.key, failed: true, busy: e.status === 429 }; }
       if (route.key !== tripState().key) return;
     }
     drawMap(); renderTrip();
@@ -3298,6 +3313,7 @@ function renderTrip() {
   const short = tz => tzTime(tz, { timeZoneName: "short" });
   const milesNote = exact ? `✅ Truck route miles from <a href="https://openrouteservice.org/" target="_blank" rel="noopener">openrouteservice</a> (map data © OpenStreetMap contributors).`
     : route && route.key === t.key && route.loading ? "Checking exact truck miles…"
+    : route && route.key === t.key && route.busy ? "Exact truck miles are busy right now (too many trips checked today), so these miles are an estimate from the map. Try again later."
     : "Miles are an estimate from the map. Check exact miles in your truck GPS or load board before you book.";
   html += `<div class="stats">${tiles.map(([n, k, big]) => `<div class="stat${big ? " big" : ""}"><div class="n">${n}</div><div class="k">${k}</div></div>`).join("")}</div>
     <p class="note">🕗 Now in ${esc(a[0])}: <b>${short(tzA)}</b> · in ${esc(b[0])}: <b>${short(tzB)}</b>${diff ? ` (${Math.abs(diff)} hour${Math.abs(diff) > 1 ? "s" : ""} ${diff > 0 ? "ahead" : "behind"})` : " (same time)"}</p>

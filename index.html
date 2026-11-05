@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://data.transportation.gov https://*.supabase.co wss://*.supabase.co https://api.openrouteservice.org https://api.weather.gov https://agtransport.usda.gov; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("cs-theme") || "dark"; } catch { document.documentElement.dataset.theme = "dark"; }</script>
 <title>DispatchWala – New MC Carrier Leads & Calling CRM for Truck Dispatchers</title>
@@ -242,6 +242,13 @@ body.needauth .nav, body.needauth footer.src p:not(:first-child) { display: none
 @media (max-width: 420px) { .tripnums { grid-template-columns: 1fr 1fr; } .tripnums .field:last-child { grid-column: 1 / -1; } }
 #tripOut { display: grid; gap: 10px; }
 #tripOut .stat.big { border-color: var(--accent); background: var(--accent-soft); }
+.tripstop.e b { background: var(--surface-2); border: 1px solid var(--line); font-size: 14px; }
+.mapbox .route.exact { stroke-dasharray: none; stroke-width: 3.5; }
+.mapbox .route.empty { stroke: var(--muted); stroke-width: 2.5; stroke-dasharray: 3 5; }
+.wx { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); font-size: 13px; }
+.wx.ok { border-color: var(--ok); } .wx.bad { border-color: var(--warn); background: var(--warn-soft); }
+.wx .w b { color: var(--bad); } .wx .a b { color: var(--warn); } .wx .sub { margin-left: 6px; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }
 .userchip .btn.small { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: inherit; }
 @media (max-width: 560px) { .live { display: none; } }
 .welcome { padding: 16px 18px; display: grid; gap: 10px; border-color: var(--accent); }
@@ -960,6 +967,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       </div>
       <div class="card panel trip">
         <h3>🚚 Trip calculator</h3>
+        <div class="tripstop e"><b title="Where the truck is empty now">🚚</b><label class="field"><input id="tripEmpty" list="dwCities" placeholder="Truck is empty in (optional), e.g. Fort Worth, TX" aria-label="Truck is empty in" autocomplete="off"></label><span></span></div>
         <div class="tripstops" id="tripStops"></div>
         <div class="buttons"><button class="btn" type="button" id="tripAdd">+ Add stop</button><button class="btn" type="button" id="tripSwap">⇅ Swap</button><button class="btn" type="button" id="tripClear">Clear</button></div>
         <div class="tripnums">
@@ -967,7 +975,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
           <label class="field"><span>Diesel $ / gallon</span><input id="tripFuel" type="number" min="1" max="15" step="0.01" inputmode="decimal"></label>
           <label class="field"><span>Load pays $ <small>(optional)</small></span><input id="tripPay" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 2500"></label>
         </div>
-        <p class="note">Diesel default is the US average from <a href="https://www.eia.gov/petroleum/gasdiesel/" target="_blank" rel="noopener">EIA</a> (Nov 2, 2026). Change it to your price, it's remembered.</p>
+        <p class="note" id="fuelNote"></p>
         <div id="tripOut"></div>
       </div>
     </div>
@@ -1120,7 +1128,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <div><h3>What we collect</h3><p>When you create an account we store your name, email, WhatsApp number and password (encrypted by our login provider, Supabase), plus your saved leads, notes, follow-ups, brokers, templates, settings and how many searches and exports you used each day. We use this only to run your account and its daily limits. We don't sell your data. A copy of your saved leads is also kept in your browser so the app works fast.</p></div>
       <div><h3>Visit counts</h3><p>We count visits to the app as daily totals only: how many visitors, which kind of site they came from (for example Google or WhatsApp) and whether they used a phone or a computer. No name, email, IP address or other personal detail is stored with these counts, and we use no advertising or tracking cookies.</p></div>
       <div><h3>Deleting your account</h3><p>You can delete your account yourself on the My account page (click your name at the top). This removes your login, details, saved leads and usage records. You can also contact us from your account email and we will remove it.</p></div>
-      <div><h3>Where data comes from</h3><p>When you search, your browser requests public carrier records directly from data.transportation.gov (U.S. Department of Transportation). Their privacy policy applies to those requests. Fonts are loaded from Google Fonts.</p></div>
+      <div><h3>Where data comes from</h3><p>When you search, your browser requests public carrier records directly from data.transportation.gov (U.S. Department of Transportation). Their privacy policy applies to those requests. On the Map &amp; trip page, the cities of your trip are sent to openrouteservice.org (truck route miles) and to the U.S. National Weather Service (weather warnings), and weekly diesel prices come from the U.S. Department of Agriculture copy of EIA data. No personal details are sent with these requests. Fonts are loaded from Google Fonts.</p></div>
       <div><h3>Calls, texts and emails</h3><p>Call, WhatsApp, text and email buttons open the app you choose (for example your phone, Google Voice or your email program). Those apps have their own privacy policies.</p></div>
       <div><h3>Deleting your data</h3><p>Clear your browser's site data for this page, or remove carriers from My leads, to delete what is stored. Backup files you download are yours to keep safe.</p></div>
       <div><h3>Carrier information</h3><p>Carrier details shown come from public FMCSA records that carriers file with the government. If you are a carrier and want your details updated, update your MCS-150 with FMCSA.</p></div>
@@ -3013,7 +3021,7 @@ const tzOffset = tz => { const d = new Date(), p = s => new Date(d.toLocaleStrin
 const callFit = h => (h >= 8 && h < 18 ? ["good", "good time to call"] : h === 7 || (h >= 18 && h < 20) ? ["edge", "early/late"] : ["bad", h < 8 ? "too early" : "too late"]);
 const STATE_NAMES = {};
 let mapReady = null, mapState = null;
-const trip = { stops: ["", ""] };
+const trip = { empty: "", stops: ["", ""] };
 
 function loadMap() {
   if (!mapReady) mapReady = new Promise((ok, fail) => {
@@ -3026,6 +3034,7 @@ function loadMap() {
     $("#dwCities").innerHTML = DW_MAP.cities.map(c => `<option value="${esc(c[0] + ", " + c[1])}">`).join("")
       + DW_MAP.states.map(s => `<option value="${esc(s[1])}">`).join("");
     drawMap();
+    loadDiesel();
   }, () => { mapReady = null; $("#mapBox").innerHTML = `<div class="empty"><strong>Couldn't load the map</strong>Check your internet and open this page again.</div>`; });
   return mapReady;
 }
@@ -3046,20 +3055,41 @@ function findState(text) {
   const s = DW_MAP.states.find(s => s[1].toLowerCase() === t || s[0].toLowerCase() === t);
   return s ? s[0] : null;
 }
+/* Lat/lon → map position (same Albers projection the map file was drawn with; lower 48 states). */
+const projLL = (() => {
+  const R = Math.PI / 180, sy0 = Math.sin(29.5 * R), n = (sy0 + Math.sin(45.5 * R)) / 2, c = 1 + sy0 * (2 * n - sy0), r0 = Math.sqrt(c) / n;
+  const raw = (l, f) => { const r = Math.sqrt(c - 2 * n * Math.sin(f)) / n; return [r * Math.sin(l * n), r0 - r * Math.cos(l * n)]; };
+  const C = raw(-0.6 * R, 38.7 * R);
+  return (lon, lat) => { const q = raw((lon + 96) * R, lat * R); return [Math.round((487.5 + 1300 * (q[0] - C[0])) * 10) / 10, Math.round((305 - 1300 * (q[1] - C[1])) * 10) / 10]; };
+})();
 function drawMap() {
   if (!window.DW_MAP) return;
   const { w, h, states } = DW_MAP;
   const small = new Set(["DC", "RI", "DE", "CT", "NJ", "MD", "MA", "NH", "VT"]);
-  const stops = trip.stops.map(findCity).filter(Boolean);
+  const t = tripState();
+  const stops = t.stops.filter(Boolean);
   const pin = (c, i, n) => {
     const kind = i === 0 ? "var(--ok)" : i === n - 1 ? "var(--bad)" : "var(--info)";
     const label = i === 0 ? "A" : i === n - 1 ? "B" : String(i);
     return `<g class="pin"><circle cx="${c[4]}" cy="${c[5]}" r="10" style="fill:${kind}"/><text x="${c[4]}" y="${c[5]}">${label}</text><text class="lbl" x="${c[4] + 14}" y="${c[5] + 1}">${esc(c[0])}</text></g>`;
   };
+  let lines = "";
+  const r = route && route.key === t.key && route.coords ? route : null;
+  const offMap = t.all.some(c => c[1] === "AK" || c[1] === "HI");
+  if (r && !offMap) {
+    const split = t.empty ? r.wp[1] : 0;
+    const d = pts => "M" + pts.map(([lon, lat]) => projLL(lon, lat).join(",")).join("L");
+    if (split) lines += `<path class="route empty" d="${d(r.coords.slice(0, split + 1))}"/>`;
+    lines += `<path class="route exact" d="${d(r.coords.slice(split))}"/>`;
+  } else if (t.ok) {
+    if (t.empty) lines += `<path class="route empty" d="M${t.empty[4]},${t.empty[5]}L${stops[0][4]},${stops[0][5]}"/>`;
+    lines += `<path class="route" d="M${stops.map(c => c[4] + "," + c[5]).join("L")}"/>`;
+  }
+  const truck = t.empty ? `<g class="pin"><circle cx="${t.empty[4]}" cy="${t.empty[5]}" r="11" style="fill:var(--surface);stroke:var(--muted)"/><text x="${t.empty[4]}" y="${t.empty[5] + 1}" style="font-size:12px">🚚</text></g>` : "";
   $("#mapBox").innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Map of US states colored by time zone">
     ${states.map(([ab, name, d]) => `<path class="st z-${zoneOfState(ab)}${ab === mapState ? " sel" : ""}" data-st="${ab}" d="${d}"><title>${esc(name)}</title></path>`).join("")}
     ${states.filter(s => !small.has(s[0])).map(([ab, , , x, y]) => `<text class="ab" x="${x}" y="${y}">${ab}</text>`).join("")}
-    ${stops.length > 1 ? `<path class="route" d="M${stops.map(c => c[4] + "," + c[5]).join("L")}"/>` : ""}
+    ${lines}${truck}
     ${stops.map((c, i) => pin(c, i, stops.length)).join("")}
   </svg>`;
 }
@@ -3078,73 +3108,231 @@ function renderStateInfo() {
 }
 function selectState(st) { mapState = st; drawMap(); renderStateInfo(); }
 
-/* Trip calculator: miles are a road estimate (straight-line distance × 1.14, close to real truck routes), drive time at 50 mph average. */
+/* ---------- Trip calculator ----------
+   Miles: exact truck (HGV) route from openrouteservice.org when ORS_KEY is set; otherwise an estimate
+   (straight-line distance × 1.14, close to real truck routes). Drive time at 50 mph average, 11 driving hours a day. */
+const ORS_KEY = ""; // free key from openrouteservice.org (Dashboard → API key)
 const ROAD_FACTOR = 1.14, AVG_MPH = 50, HOURS_PER_DAY = 11;
+let route = null, weather = null, diesel = null, routeTimer = null;
 function haversine(a, b) {
   const R = 3958.8, rad = x => x * Math.PI / 180;
   const dLat = rad(b[2] - a[2]), dLon = rad(b[3] - a[3]);
   const s = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[2])) * Math.cos(rad(b[2])) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(s));
 }
+/* Everything about the current trip in one place: matched cities, what's missing, and a key that changes when the trip changes. */
+function tripState() {
+  const empty = trip.empty.trim() ? findCity(trip.empty) : null;
+  const stops = trip.stops.map(s => (s.trim() ? findCity(s) : null));
+  const bad = [trip.empty, ...trip.stops].filter((s, i) => s.trim() && !(i === 0 ? empty : stops[i - 1])).map(s => s.trim());
+  const filled = stops.filter(Boolean);
+  const ok = filled.length >= 2 && stops[0] && stops[stops.length - 1] && !bad.length;
+  const all = ok ? (empty ? [empty, ...filled] : filled) : [];
+  return { empty, stops, bad, ok, all, key: all.map(c => c[0] + "," + c[1]).join("|") };
+}
+const estLegs = pts => pts.slice(1).map((c, i) => haversine(pts[i], c) * ROAD_FACTOR);
+
+/* Weekly diesel price by region (EIA numbers, served by the USDA open data site), cached for 12 hours. */
+const DIESEL_REGION = {};
+[["New England", "CT ME MA NH RI VT"], ["Central Atlantic", "DE DC MD NJ NY PA"], ["Lower Atlantic", "FL GA NC SC VA WV"],
+ ["Midwest", "IL IN IA KS KY MI MN MO NE ND SD OH OK TN WI"], ["Gulf Coast", "AL AR LA MS NM TX"], ["Rocky Mountains", "CO ID MT UT WY"],
+ ["West Coast exc California", "AK AZ HI NV OR WA"], ["California", "CA"]].forEach(([r, sts]) => sts.split(" ").forEach(st => (DIESEL_REGION[st] = r)));
+async function loadDiesel() {
+  try { const c = JSON.parse(localStorage.getItem("dw-diesel") || "null"); if (c && Date.now() - c.at < 12 * 36e5) { diesel = c; return; } if (c) diesel = c; } catch {}
+  try {
+    const res = await fetch("https://agtransport.usda.gov/resource/x88w-atzp.json?$order=date%20DESC&$limit=30");
+    if (!res.ok) throw new Error(res.status);
+    const rows = await res.json();
+    const day = rows[0].date, prices = {};
+    rows.filter(r => r.date === day).forEach(r => (prices[r.region] = +r.diesel_price));
+    diesel = { at: Date.now(), date: day.slice(0, 10), prices };
+    try { localStorage.setItem("dw-diesel", JSON.stringify(diesel)); } catch {}
+  } catch {}
+  renderTrip();
+}
+/* Price for this trip: average of the regions the stops are in (or the US average). */
+function tripDiesel(t) {
+  if (!diesel) return null;
+  const regions = [...new Set((t.ok ? t.all : []).map(c => DIESEL_REGION[c[1]]).filter(r => diesel.prices[r]))];
+  if (!regions.length) return diesel.prices.US ? { price: diesel.prices.US, label: "US average" } : null;
+  const price = regions.reduce((s, r) => s + diesel.prices[r], 0) / regions.length;
+  return { price, label: regions.map(r => `${r.replace(" exc California", "")} $${diesel.prices[r].toFixed(2)}`).join(", ") + (regions.length > 1 ? " (average used)" : "") };
+}
+function renderFuelNote(t) {
+  const manual = tripPrefs().fuelManual;
+  const d = tripDiesel(t);
+  if (!manual && d && document.activeElement !== $("#tripFuel")) $("#tripFuel").value = d.price.toFixed(2);
+  const when = diesel ? new Date(diesel.date + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+  $("#fuelNote").innerHTML = manual
+    ? `Using your diesel price. <button class="linkbtn" type="button" id="fuelAuto">↺ Use this week's price</button>`
+    : d ? `⛽ Diesel this week (EIA, ${esc(when)}): ${esc(d.label)}. Type your own price to change it.` : `Type your diesel price. It's remembered.`;
+}
+
+/* Exact truck route from openrouteservice (driving-hgv). Returns miles per leg, the road line and where each stop is on it. */
+async function fetchRoute(pts) {
+  const res = await fetch("https://api.openrouteservice.org/v2/directions/driving-hgv/geojson", {
+    method: "POST", headers: { Authorization: ORS_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ coordinates: pts.map(c => [c[3], c[2]]), units: "mi", geometry_simplify: true })
+  });
+  if (!res.ok) throw new Error("route " + res.status);
+  const f = (await res.json()).features[0];
+  return { legs: f.properties.segments.map(s => s.distance), coords: f.geometry.coordinates, wp: f.properties.way_points };
+}
+function scheduleRoute() { clearTimeout(routeTimer); routeTimer = setTimeout(syncRoute, 900); }
+async function syncRoute() {
+  const t = tripState();
+  if (!t.ok) { route = null; weather = null; drawMap(); renderTrip(); return; }
+  if (!route || route.key !== t.key) {
+    route = { key: t.key, loading: !!ORS_KEY };
+    renderTrip();
+    if (ORS_KEY) {
+      try { route = { key: t.key, exact: true, ...(await fetchRoute(t.all)) }; }
+      catch { route = { key: t.key, failed: true }; }
+      if (route.key !== tripState().key) return;
+    }
+    drawMap(); renderTrip();
+  }
+  if (!weather || weather.key !== t.key) checkWeather(t);
+}
+
+/* Weather warnings along the route (U.S. National Weather Service), checked about every 100 miles. */
+const ROAD_WEATHER = /Blizzard|Winter Storm|Ice Storm|Winter Weather|Freezing|Snow Squall|Lake Effect Snow|High Wind|Wind Advisory|Dense Fog|Flood|Tornado|Hurricane|Tropical Storm|Extreme Cold|Wind Chill|Dust|Excessive Heat|Extreme Heat|Severe Thunderstorm/;
+function nearestCity(lat, lon) {
+  let best = null, bd = Infinity;
+  for (const c of DW_MAP.cities) { const d = (c[2] - lat) ** 2 + ((c[3] - lon) * Math.cos(lat * Math.PI / 180)) ** 2; if (d < bd) { bd = d; best = c; } }
+  return best;
+}
+async function checkWeather(t) {
+  const key = t.key;
+  weather = { key, loading: true, alerts: [] };
+  renderTrip();
+  const line = route && route.key === key && route.coords ? route.coords.map(([lon, lat]) => [lat, lon]) : t.all.map(c => [c[2], c[3]]);
+  const pts = [line[0]];
+  let total = 0;
+  const legs = [];
+  for (let i = 1; i < line.length; i++) { const d = haversine([0, 0, ...line[i - 1]], [0, 0, ...line[i]]); legs.push(d); total += d; }
+  const step = Math.max(100, total / 28);
+  let since = 0;
+  for (let i = 1; i < line.length; i++) {
+    let d = legs[i - 1], [aLat, aLon] = line[i - 1], [bLat, bLon] = line[i], done = 0;
+    while (since + (d - done) >= step) {
+      done += step - since; since = 0;
+      const f = done / d; pts.push([aLat + (bLat - aLat) * f, aLon + (bLon - aLon) * f]);
+    }
+    since += d - done;
+  }
+  pts.push(line[line.length - 1]);
+  const found = new Map();
+  let failed = 0;
+  for (let i = 0; i < pts.length; i += 6) {
+    await Promise.all(pts.slice(i, i + 6).map(async ([lat, lon]) => {
+      try {
+        const res = await fetch(`https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`, { headers: { Accept: "application/geo+json" } });
+        if (!res.ok) throw new Error(res.status);
+        for (const a of (await res.json()).features || []) {
+          const p = a.properties;
+          if (!ROAD_WEATHER.test(p.event) || /Statement|Outlook/.test(p.event) || found.has(p.event + p.areaDesc)) continue;
+          const near = nearestCity(lat, lon);
+          found.set(p.event + p.areaDesc, { event: p.event, near: near ? near[0] + ", " + near[1] : "", until: p.ends || p.expires, warn: /Warning/.test(p.event) });
+        }
+      } catch { failed++; }
+    }));
+    if (weather.key !== key) return;
+  }
+  const seen = new Set();
+  weather = { key, failed: failed === pts.length, alerts: [...found.values()].filter(a => !seen.has(a.event + a.near) && seen.add(a.event + a.near)).sort((a, b) => b.warn - a.warn).slice(0, 8) };
+  renderTrip();
+}
+function weatherHtml(t) {
+  if (!weather || weather.key !== t.key) return "";
+  if (weather.loading) return `<div class="wx"><b>🌦 Weather on the route</b><span class="sub">Checking weather warnings…</span></div>`;
+  if (weather.failed) return `<div class="wx"><b>🌦 Weather on the route</b><span class="sub">Couldn't check the weather right now.</span></div>`;
+  if (!weather.alerts.length) return `<div class="wx ok"><b>🌦 Weather on the route</b><span>✅ No weather warnings on this route right now.</span></div>`;
+  const until = s => s ? " · until " + new Date(s).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" }) + " (your time)" : "";
+  return `<div class="wx bad"><b>🌦 Weather on the route</b>${weather.alerts.map(a => `<div class="${a.warn ? "w" : "a"}">⚠ <b>${esc(a.event)}</b>${a.near ? ` near ${esc(a.near)}` : ""}<span class="sub">${esc(until(a.until))}</span></div>`).join("")}<span class="sub">From the U.S. National Weather Service. Tell the driver before the trip.</span></div>`;
+}
+
 function renderTripStops() {
   const n = trip.stops.length;
   $("#tripStops").innerHTML = trip.stops.map((v, i) => {
     const cls = i === 0 ? "a" : i === n - 1 ? "z" : "";
-    const label = i === 0 ? "From" : i === n - 1 ? "To" : "Stop " + i;
+    const label = i === 0 ? "Pickup" : i === n - 1 ? "Delivery" : "Stop " + i;
     return `<div class="tripstop ${cls}"><b>${i === 0 ? "A" : i === n - 1 ? "B" : i}</b>
-      <label class="field"><input data-trip="${i}" list="dwCities" value="${esc(v)}" placeholder="${label}: city, e.g. ${i === 0 ? "Dallas, TX" : "Atlanta, GA"}" aria-label="${label}" autocomplete="off"></label>
+      <label class="field"><input data-trip="${i}" list="dwCities" value="${esc(v)}" placeholder="${label}: city, e.g. ${i === 0 ? "Dallas, TX" : i === n - 1 ? "Atlanta, GA" : "Jackson, MS"}" aria-label="${label}" autocomplete="off"></label>
       ${i > 0 && i < n - 1 ? `<button type="button" data-unstop="${i}" aria-label="Remove stop">×</button>` : "<span></span>"}</div>`;
   }).join("");
   $("#tripAdd").disabled = n >= 6;
 }
+let tripText = "";
 function renderTrip() {
-  const pts = trip.stops.map(findCity);
-  const filled = trip.stops.filter(s => s.trim());
-  const ok = pts.filter(Boolean);
-  const bad = trip.stops.map((s, i) => s.trim() && !pts[i] ? s.trim() : null).filter(Boolean);
+  const t = tripState();
+  renderFuelNote(t);
   let html = "";
-  if (bad.length) html += `<p class="note" style="color:var(--bad)">Couldn't find: ${bad.map(esc).join(", ")}. Pick a city from the list.</p>`;
-  if (ok.length < 2 || filled.length < 2) {
-    $("#tripOut").innerHTML = html + `<p class="note">Type a From and To city to see miles, drive time and fuel cost.</p>`;
+  if (t.bad.length) html += `<p class="note" style="color:var(--bad)">Couldn't find: ${t.bad.map(esc).join(", ")}. Pick a city from the list.</p>`;
+  if (!t.ok) {
+    $("#tripOut").innerHTML = html + (t.bad.length ? "" : `<p class="note">Type a pickup and delivery city to see miles, drive time and fuel cost.</p>`);
+    tripText = "";
     return;
   }
-  let miles = 0;
-  for (let i = 1; i < ok.length; i++) miles += haversine(ok[i - 1], ok[i]) * ROAD_FACTOR;
-  miles = Math.round(miles);
+  const exact = route && route.key === t.key && route.exact;
+  const legs = exact ? route.legs : estLegs(t.all);
+  const emptyMi = t.empty ? Math.round(legs[0]) : 0;
+  const loaded = Math.round(legs.slice(t.empty ? 1 : 0).reduce((s, x) => s + x, 0));
+  const total = loaded + emptyMi;
   const mpg = +$("#tripMpg").value || 6.5, fuel = +$("#tripFuel").value || 0, pay = +$("#tripPay").value || 0;
-  const gallons = miles / mpg, fuelCost = gallons * fuel, hours = miles / AVG_MPH;
+  const gallons = total / mpg, fuelCost = gallons * fuel, hours = total / AVG_MPH;
   const days = Math.max(1, Math.ceil(hours / HOURS_PER_DAY));
   const money = n => "$" + Math.round(n).toLocaleString("en-US");
-  const tiles = [[miles.toLocaleString("en-US"), "Miles (about)", true],
-    [`${Math.round(hours)} hrs`, `Driving, about ${days} day${days > 1 ? "s" : ""}`],
-    [money(fuelCost), `Fuel (${Math.round(gallons)} gal)`]];
-  if (pay) tiles.push(["$" + (pay / miles).toFixed(2), "Rate per mile", true], [money(pay - fuelCost), "Left after fuel"]);
-  else tiles.push(["$" + (fuelCost / miles).toFixed(2), "Fuel cost per mile"]);
-  const a = ok[0], b = ok[ok.length - 1];
+  const mi = n => n.toLocaleString("en-US");
+  const tiles = [[mi(loaded), exact ? "Loaded miles" : "Loaded miles (about)", true]];
+  if (t.empty) tiles.push([mi(emptyMi), "Empty miles to pickup"]);
+  tiles.push([`${Math.round(hours)} hrs`, `Driving, about ${days} day${days > 1 ? "s" : ""}`], [money(fuelCost), `Fuel (${Math.round(gallons)} gal)`]);
+  if (pay) {
+    tiles.push(["$" + (pay / loaded).toFixed(2), "Rate per mile", !t.empty]);
+    if (t.empty) tiles.push(["$" + (pay / total).toFixed(2), "All-in rate (with empty miles)", true]);
+    tiles.push([money(pay - fuelCost), "Left after fuel"]);
+  } else tiles.push(["$" + (fuelCost / total).toFixed(2), "Fuel cost per mile"]);
+  const stops = t.stops.filter(Boolean), a = stops[0], b = stops[stops.length - 1];
   const tzA = cityTz(a[1], a[2], a[3]), tzB = cityTz(b[1], b[2], b[3]);
   const diff = tzOffset(tzB) - tzOffset(tzA);
   const short = tz => tzTime(tz, { timeZoneName: "short" });
+  const milesNote = exact ? `✅ Truck route miles from <a href="https://openrouteservice.org/" target="_blank" rel="noopener">openrouteservice</a> (map data © OpenStreetMap contributors).`
+    : route && route.key === t.key && route.loading ? "Checking exact truck miles…"
+    : "Miles are an estimate from the map. Check exact miles in your truck GPS or load board before you book.";
   html += `<div class="stats">${tiles.map(([n, k, big]) => `<div class="stat${big ? " big" : ""}"><div class="n">${n}</div><div class="k">${k}</div></div>`).join("")}</div>
     <p class="note">🕗 Now in ${esc(a[0])}: <b>${short(tzA)}</b> · in ${esc(b[0])}: <b>${short(tzB)}</b>${diff ? ` (${Math.abs(diff)} hour${Math.abs(diff) > 1 ? "s" : ""} ${diff > 0 ? "ahead" : "behind"})` : " (same time)"}</p>
-    <p class="note">Miles are an estimate from the map. Check exact miles in your truck GPS or load board before you book.</p>`;
+    ${weatherHtml(t)}
+    <div class="buttons"><a class="btn primary" id="tripWa" target="_blank" rel="noopener">📲 Send on WhatsApp</a><button class="btn" type="button" id="tripCopy">Copy trip</button></div>
+    <p class="note">${milesNote}</p>`;
+  const lines = [`🚚 Load: ${stops.map(c => c[0] + ", " + c[1]).join(" → ")}`,
+    `Loaded miles: ${exact ? "" : "about "}${mi(loaded)}`];
+  if (t.empty) lines.push(`Empty miles to pickup: ${exact ? "" : "about "}${mi(emptyMi)} (truck in ${t.empty[0]}, ${t.empty[1]})`);
+  if (pay) lines.push(`Pay: ${money(pay)} = $${(pay / loaded).toFixed(2)}/mile${t.empty ? `, $${(pay / total).toFixed(2)}/mile all-in` : ""}`);
+  lines.push(`Driving: about ${Math.round(hours)} hrs (${days} day${days > 1 ? "s" : ""})`, `Fuel: about ${money(fuelCost)} (${Math.round(gallons)} gal at $${fuel.toFixed(2)})`);
+  if (weather && weather.key === t.key && weather.alerts && weather.alerts.length) lines.push(`⚠ Weather: ${weather.alerts.map(x => x.event + (x.near ? " near " + x.near : "")).join("; ")}`);
+  tripText = lines.join("\n");
   $("#tripOut").innerHTML = html;
+  $("#tripWa").href = "https://wa.me/?text=" + encodeURIComponent(tripText);
 }
-function saveTripPrefs() {
-  try { localStorage.setItem("dw-trip", JSON.stringify({ mpg: $("#tripMpg").value, fuel: $("#tripFuel").value })); } catch {}
+function tripPrefs() { try { return JSON.parse(localStorage.getItem("dw-trip") || "{}"); } catch { return {}; } }
+function saveTripPrefs(extra = {}) {
+  try { localStorage.setItem("dw-trip", JSON.stringify({ ...tripPrefs(), mpg: $("#tripMpg").value, fuel: $("#tripFuel").value, ...extra })); } catch {}
 }
 function wireMap() {
-  let prefs = {};
-  try { prefs = JSON.parse(localStorage.getItem("dw-trip") || "{}"); } catch {}
+  const prefs = tripPrefs();
   $("#tripMpg").value = prefs.mpg || "6.5";
   $("#tripFuel").value = prefs.fuel || "6.29";
   renderTripStops(); renderTrip();
-  const refresh = () => { renderTrip(); drawMap(); };
+  const update = () => { renderTrip(); scheduleRoute(); };
+  const refresh = () => { renderTrip(); drawMap(); scheduleRoute(); };
   $("#tripStops").addEventListener("input", e => {
     const i = e.target.dataset.trip; if (i === undefined) return;
     trip.stops[+i] = e.target.value;
-    renderTrip();
+    update();
   });
+  $("#tripEmpty").addEventListener("input", e => { trip.empty = e.target.value; update(); });
   $("#tripStops").addEventListener("change", drawMap);
+  $("#tripEmpty").addEventListener("change", drawMap);
   $("#tripStops").addEventListener("click", e => {
     const b = e.target.closest("[data-unstop]"); if (!b) return;
     trip.stops.splice(+b.dataset.unstop, 1); renderTripStops(); refresh();
@@ -3154,8 +3342,15 @@ function wireMap() {
     $(`[data-trip="${trip.stops.length - 2}"]`).focus();
   });
   $("#tripSwap").addEventListener("click", () => { trip.stops.reverse(); renderTripStops(); refresh(); });
-  $("#tripClear").addEventListener("click", () => { trip.stops = ["", ""]; $("#tripPay").value = ""; renderTripStops(); refresh(); });
-  ["#tripMpg", "#tripFuel", "#tripPay"].forEach(id => $(id).addEventListener("input", () => { saveTripPrefs(); renderTrip(); }));
+  $("#tripClear").addEventListener("click", () => { trip.stops = ["", ""]; trip.empty = ""; $("#tripEmpty").value = ""; $("#tripPay").value = ""; renderTripStops(); refresh(); });
+  $("#tripMpg").addEventListener("input", () => { saveTripPrefs(); renderTrip(); });
+  $("#tripPay").addEventListener("input", renderTrip);
+  $("#tripFuel").addEventListener("input", () => { saveTripPrefs({ fuelManual: true }); renderTrip(); });
+  $("#fuelNote").addEventListener("click", e => {
+    if (!e.target.closest("#fuelAuto")) return;
+    saveTripPrefs({ fuelManual: false }); renderTrip(); saveTripPrefs();
+  });
+  $("#tripOut").addEventListener("click", e => { if (e.target.closest("#tripCopy") && tripText) copyText(tripText, "Trip copied"); });
   $("#mapBox").addEventListener("click", e => { const p = e.target.closest("[data-st]"); if (p) selectState(p.dataset.st); });
   $("#mapFind").addEventListener("change", e => {
     const v = e.target.value;
@@ -3165,7 +3360,7 @@ function wireMap() {
     const c = findCity(v);
     if (c && !findState(v)) {
       const free = trip.stops.findIndex(s => !s.trim());
-      if (free >= 0) { trip.stops[free] = c[0] + ", " + c[1]; renderTripStops(); renderTrip(); drawMap(); toast(`Added ${c[0]} to your trip`); }
+      if (free >= 0) { trip.stops[free] = c[0] + ", " + c[1]; renderTripStops(); refresh(); toast(`Added ${c[0]} to your trip`); }
     }
     e.target.value = "";
   });

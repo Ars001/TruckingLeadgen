@@ -208,6 +208,40 @@ body.needauth .nav, body.needauth footer.src p:not(:first-child) { display: none
 .srcbars div { display: grid; grid-template-columns: 90px minmax(0, 1fr) 48px; gap: 10px; align-items: center; font-size: 13px; }
 .srcbars i { display: block; height: 8px; border-radius: 999px; background: var(--accent); min-width: 2px; }
 .srcbars b { text-align: right; font-variant-numeric: tabular-nums; }
+/* Map & trip */
+.mapgrid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 980px) { .mapgrid { grid-template-columns: minmax(0, 1fr); } }
+.mapbox svg { display: block; width: 100%; height: auto; }
+.mapbox .st { stroke: var(--surface); stroke-width: 1; cursor: pointer; transition: filter .15s; }
+.mapbox .st:hover { filter: brightness(1.15) saturate(1.3); }
+.mapbox .st.sel { stroke: var(--ink); stroke-width: 2.2; }
+.z-e { --z: rgba(59, 130, 246, .34); } .z-c { --z: rgba(34, 197, 94, .34); } .z-m { --z: rgba(234, 179, 8, .4); }
+.z-p { --z: rgba(168, 85, 247, .34); } .z-ak { --z: rgba(20, 184, 166, .36); } .z-hi { --z: rgba(244, 63, 94, .32); }
+.mapbox .st { fill: var(--z); } .tzlegend i { background: var(--z); }
+.mapbox .ab { font-size: 10px; font-weight: 700; fill: var(--ink); opacity: .55; pointer-events: none; text-anchor: middle; dominant-baseline: middle; }
+.mapbox .route { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 7 6; stroke-linecap: round; }
+.mapbox .pin circle { stroke: var(--surface); stroke-width: 2.5; }
+.mapbox .pin text { font-size: 11px; font-weight: 800; fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.mapbox .pin .lbl { fill: var(--ink); font-size: 12px; font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; text-anchor: start; }
+.tzlegend { display: flex; flex-wrap: wrap; gap: 8px; }
+.tzlegend span { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tzlegend i { width: 12px; height: 12px; border-radius: 4px; }
+.tzlegend em { font-style: normal; font-weight: 500; color: var(--muted); }
+.tzlegend .good em { color: var(--ok); } .tzlegend .bad em { color: var(--bad); } .tzlegend .edge em { color: var(--warn); }
+.tzlegend .good { border-color: var(--ok); }
+@media (max-width: 560px) { .tzlegend { gap: 6px; } .tzlegend span { font-size: 11.5px; padding: 4px 8px; gap: 5px; } .tzlegend em { display: none; } .tzlegend::after { content: "Green border = good time to call"; width: 100%; font-size: 11px; color: var(--muted); } }
+.stateinfo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
+.tripstops { display: grid; gap: 8px; }
+.tripstop { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.tripstop b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: #fff; background: var(--info); }
+.tripstop.a b { background: var(--ok); } .tripstop.z b { background: var(--bad); }
+.tripstop input { width: 100%; }
+.tripstop button { border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 6px; }
+.tripnums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tripnums small { font-weight: 400; color: var(--muted); }
+@media (max-width: 420px) { .tripnums { grid-template-columns: 1fr 1fr; } .tripnums .field:last-child { grid-column: 1 / -1; } }
+#tripOut { display: grid; gap: 10px; }
+#tripOut .stat.big { border-color: var(--accent); background: var(--accent-soft); }
 .userchip .btn.small { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: inherit; }
 @media (max-width: 560px) { .live { display: none; } }
 .welcome { padding: 16px 18px; display: grid; gap: 10px; border-color: var(--accent); }
@@ -551,6 +585,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <a href="#today" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Today <span class="count" id="navToday">0</span></a>
     <a href="#pipeline" data-view="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>My leads <span class="count" id="navPipe">0</span></a>
     <a href="#customers" data-view="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Customers <span class="count" id="navCust">0</span></a>
+    <a href="#map" data-view="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Map &amp; trip</a>
     <a href="#scripts" data-view="scripts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Scripts &amp; settings</a>
     <a href="#admin" data-view="admin" id="navAdmin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>Admin</a>
     <span class="leadmeter" id="leadMeter" title="Free new leads you can take today. Resets at midnight."><b>0 of 60 leads today</b><span class="track"><i></i></span></span>
@@ -909,6 +944,36 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   </section>
 
   <!-- ============ MY ACCOUNT ============ -->
+  <section class="view" id="view-map" hidden>
+    <div>
+      <h2 class="title">Map &amp; trip</h2>
+      <p class="lede">See US time zones, check if it's a good time to call, and work out miles, fuel and rate per mile for a load.</p>
+    </div>
+    <div class="mapgrid">
+      <div class="card panel mapcard">
+        <div class="maptop">
+          <label class="field mapfind"><span>Find a city or state</span><input id="mapFind" list="dwCities" placeholder="e.g. Dallas, TX or Texas" autocomplete="off"></label>
+        </div>
+        <div class="tzlegend" id="tzLegend"></div>
+        <div class="mapbox" id="mapBox"><div class="empty">Loading map…</div></div>
+        <div class="stateinfo" id="stateInfo"><span class="sub">Tap a state to see its time and find new carriers there.</span></div>
+      </div>
+      <div class="card panel trip">
+        <h3>🚚 Trip calculator</h3>
+        <div class="tripstops" id="tripStops"></div>
+        <div class="buttons"><button class="btn" type="button" id="tripAdd">+ Add stop</button><button class="btn" type="button" id="tripSwap">⇅ Swap</button><button class="btn" type="button" id="tripClear">Clear</button></div>
+        <div class="tripnums">
+          <label class="field"><span>Truck MPG</span><input id="tripMpg" type="number" min="2" max="20" step="0.1" inputmode="decimal"></label>
+          <label class="field"><span>Diesel $ / gallon</span><input id="tripFuel" type="number" min="1" max="15" step="0.01" inputmode="decimal"></label>
+          <label class="field"><span>Load pays $ <small>(optional)</small></span><input id="tripPay" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 2500"></label>
+        </div>
+        <p class="note">Diesel default is the US average from <a href="https://www.eia.gov/petroleum/gasdiesel/" target="_blank" rel="noopener">EIA</a> (Nov 2, 2026). Change it to your price, it's remembered.</p>
+        <div id="tripOut"></div>
+      </div>
+    </div>
+    <datalist id="dwCities"></datalist>
+  </section>
+
   <section class="view" id="view-account" hidden>
     <div>
       <h2 class="title">My account</h2>
@@ -2432,13 +2497,14 @@ function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-s
 
 /* ===================== navigation ===================== */
 const BASE_TITLE = document.title;
-const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy", "auth", "admin", "account"];
+const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy", "auth", "admin", "account", "map"];
 function showView(v) {
   if (!VIEWS.includes(v) || v === "auth") v = "find";
   if (sb && !session && !["terms", "privacy"].includes(v)) v = "auth";
   if (v === "admin" && !state.isAdmin) v = "find";
   if (v === "admin") loadAdmin();
   if (v === "account") loadAccount();
+  if (v === "map") loadMap();
   state.view = v;
   VIEWS.forEach(k => ($("#view-" + k).hidden = k !== v));
   const navKey = v === "brokers" ? "customers" : v;
@@ -2465,6 +2531,7 @@ function renderAll() {
   if (state.view === "brokers") renderBrokers();
   if (state.view === "admin") renderAdmin();
   if (state.view === "account") renderAccount();
+  if (state.view === "map") { renderTzLegend(); renderStateInfo(); }
   if (state.view === "scripts") renderScripts();
   if ($("#detail").open) renderDetail();
 }
@@ -2832,6 +2899,7 @@ function init() {
   });
   checkReminders();
   renderLimits();
+  wireMap();
   if (sb) { wireAuth(); wireAdmin(); wireAccount(); trackVisit(); initAuth(); return; }
   backfillCarriers();
   run(false, { auto: true });
@@ -2912,6 +2980,202 @@ async function downloadFullBackup(btn) {
   try { localStorage.setItem("dw-last-backup", String(Date.now())); } catch {}
   renderBackupNote();
   toast(`Backup downloaded: ${(data.profiles || []).length} users`);
+}
+
+/* ===================== Map & trip ===================== */
+/* Map data (state outlines + ~1,900 US cities, from the US Census) lives in us-map.js and loads the first time the map opens. */
+const ZONES = {
+  e: ["Eastern", "America/New_York"], c: ["Central", "America/Chicago"], m: ["Mountain", "America/Denver"],
+  p: ["Pacific", "America/Los_Angeles"], ak: ["Alaska", "America/Anchorage"], hi: ["Hawaii", "Pacific/Honolulu"]
+};
+const zoneOfState = st => ({ "America/New_York": "e", "America/Detroit": "e", "America/Indiana/Indianapolis": "e", "America/Chicago": "c",
+  "America/Denver": "m", "America/Boise": "m", "America/Phoenix": "m", "America/Los_Angeles": "p", "America/Anchorage": "ak", "Pacific/Honolulu": "hi" })[STATE_TZ[st]] || "c";
+/* Time zone for one city: the state's main zone, with the well-known split areas handled. */
+function cityTz(st, lat, lon) {
+  if (st === "TX" && lon < -104.9) return "America/Denver";
+  if (st === "FL" && lon < -85.1) return "America/Chicago";
+  if (st === "KY" && lon < -86.0) return "America/Chicago";
+  if (st === "TN" && lon < -85.4) return "America/Chicago";
+  if (st === "TN") return "America/New_York";
+  if (st === "IN" && lon < -86.9 && (lat > 41.2 || lat < 38.6)) return "America/Chicago";
+  if (st === "MI" && lon < -87.3 && lat > 45) return "America/Chicago";
+  if (st === "ID" && lat > 45.5) return "America/Los_Angeles";
+  if (st === "ND" && lon < -101.3 && lat < 47.4) return "America/Denver";
+  if (st === "SD" && lon < -100.6) return "America/Denver";
+  if (st === "NE" && lon < -101.3) return "America/Denver";
+  if (st === "KS" && lon < -101.5) return "America/Denver";
+  if (st === "OR" && lon < -117.3 && lat < 44.5) return "America/Boise";
+  return STATE_TZ[st] || "America/Chicago";
+}
+const tzTime = (tz, opts = {}) => new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit", ...opts }).format(new Date());
+const tzHour = tz => +new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }).format(new Date());
+const tzOffset = tz => { const d = new Date(), p = s => new Date(d.toLocaleString("en-US", { timeZone: s })); return Math.round((p(tz) - p("UTC")) / 36e5); };
+const callFit = h => (h >= 8 && h < 18 ? ["good", "good time to call"] : h === 7 || (h >= 18 && h < 20) ? ["edge", "early/late"] : ["bad", h < 8 ? "too early" : "too late"]);
+const STATE_NAMES = {};
+let mapReady = null, mapState = null;
+const trip = { stops: ["", ""] };
+
+function loadMap() {
+  if (!mapReady) mapReady = new Promise((ok, fail) => {
+    if (window.DW_MAP) return ok();
+    const s = document.createElement("script");
+    s.src = "us-map.js?v=1"; s.onload = ok; s.onerror = fail;
+    document.head.appendChild(s);
+  }).then(() => {
+    DW_MAP.states.forEach(([ab, name]) => (STATE_NAMES[ab] = name));
+    $("#dwCities").innerHTML = DW_MAP.cities.map(c => `<option value="${esc(c[0] + ", " + c[1])}">`).join("")
+      + DW_MAP.states.map(s => `<option value="${esc(s[1])}">`).join("");
+    drawMap();
+  }, () => { mapReady = null; $("#mapBox").innerHTML = `<div class="empty"><strong>Couldn't load the map</strong>Check your internet and open this page again.</div>`; });
+  return mapReady;
+}
+function findCity(text) {
+  if (!window.DW_MAP || !text) return null;
+  const t = text.trim().toLowerCase().replace(/\s+/g, " ");
+  const m = t.match(/^(.+?)[, ]+([a-z]{2})$/);
+  const list = DW_MAP.cities;
+  return (m && list.find(c => c[0].toLowerCase() === m[1] && c[1].toLowerCase() === m[2]))
+    || list.find(c => (c[0] + ", " + c[1]).toLowerCase() === t)
+    || list.find(c => c[0].toLowerCase() === t)
+    || (m && list.find(c => c[0].toLowerCase().startsWith(m[1]) && c[1].toLowerCase() === m[2]))
+    || list.find(c => c[0].toLowerCase().startsWith(t)) || null;
+}
+function findState(text) {
+  if (!window.DW_MAP || !text) return null;
+  const t = text.trim().toLowerCase();
+  const s = DW_MAP.states.find(s => s[1].toLowerCase() === t || s[0].toLowerCase() === t);
+  return s ? s[0] : null;
+}
+function drawMap() {
+  if (!window.DW_MAP) return;
+  const { w, h, states } = DW_MAP;
+  const small = new Set(["DC", "RI", "DE", "CT", "NJ", "MD", "MA", "NH", "VT"]);
+  const stops = trip.stops.map(findCity).filter(Boolean);
+  const pin = (c, i, n) => {
+    const kind = i === 0 ? "var(--ok)" : i === n - 1 ? "var(--bad)" : "var(--info)";
+    const label = i === 0 ? "A" : i === n - 1 ? "B" : String(i);
+    return `<g class="pin"><circle cx="${c[4]}" cy="${c[5]}" r="10" style="fill:${kind}"/><text x="${c[4]}" y="${c[5]}">${label}</text><text class="lbl" x="${c[4] + 14}" y="${c[5] + 1}">${esc(c[0])}</text></g>`;
+  };
+  $("#mapBox").innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Map of US states colored by time zone">
+    ${states.map(([ab, name, d]) => `<path class="st z-${zoneOfState(ab)}${ab === mapState ? " sel" : ""}" data-st="${ab}" d="${d}"><title>${esc(name)}</title></path>`).join("")}
+    ${states.filter(s => !small.has(s[0])).map(([ab, , , x, y]) => `<text class="ab" x="${x}" y="${y}">${ab}</text>`).join("")}
+    ${stops.length > 1 ? `<path class="route" d="M${stops.map(c => c[4] + "," + c[5]).join("L")}"/>` : ""}
+    ${stops.map((c, i) => pin(c, i, stops.length)).join("")}
+  </svg>`;
+}
+function renderTzLegend() {
+  $("#tzLegend").innerHTML = Object.entries(ZONES).map(([k, [name, tz]]) => {
+    const [fit, note] = callFit(tzHour(tz));
+    return `<span class="${fit}" title="${note}"><i class="z-${k}"></i>${name} ${tzTime(tz)} <em>· ${note}</em></span>`;
+  }).join("");
+}
+function renderStateInfo() {
+  const st = mapState;
+  if (!st) { $("#stateInfo").innerHTML = `<span class="sub">Tap a state to see its time and find new carriers there.</span>`; return; }
+  const tz = STATE_TZ[st], [fit, note] = callFit(tzHour(tz));
+  $("#stateInfo").innerHTML = `<div><b>${esc(STATE_NAMES[st] || st)}</b> · ${ZONES[zoneOfState(st)][0]} time · <span class="lt ${fit}">🕗 ${tzTime(tz)} · ${note}</span></div>
+    <button class="btn primary" type="button" id="mapFindCarriers">Find new carriers in ${esc(st)}</button>`;
+}
+function selectState(st) { mapState = st; drawMap(); renderStateInfo(); }
+
+/* Trip calculator: miles are a road estimate (straight-line distance × 1.14, close to real truck routes), drive time at 50 mph average. */
+const ROAD_FACTOR = 1.14, AVG_MPH = 50, HOURS_PER_DAY = 11;
+function haversine(a, b) {
+  const R = 3958.8, rad = x => x * Math.PI / 180;
+  const dLat = rad(b[2] - a[2]), dLon = rad(b[3] - a[3]);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[2])) * Math.cos(rad(b[2])) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+function renderTripStops() {
+  const n = trip.stops.length;
+  $("#tripStops").innerHTML = trip.stops.map((v, i) => {
+    const cls = i === 0 ? "a" : i === n - 1 ? "z" : "";
+    const label = i === 0 ? "From" : i === n - 1 ? "To" : "Stop " + i;
+    return `<div class="tripstop ${cls}"><b>${i === 0 ? "A" : i === n - 1 ? "B" : i}</b>
+      <label class="field"><input data-trip="${i}" list="dwCities" value="${esc(v)}" placeholder="${label}: city, e.g. ${i === 0 ? "Dallas, TX" : "Atlanta, GA"}" aria-label="${label}" autocomplete="off"></label>
+      ${i > 0 && i < n - 1 ? `<button type="button" data-unstop="${i}" aria-label="Remove stop">×</button>` : "<span></span>"}</div>`;
+  }).join("");
+  $("#tripAdd").disabled = n >= 6;
+}
+function renderTrip() {
+  const pts = trip.stops.map(findCity);
+  const filled = trip.stops.filter(s => s.trim());
+  const ok = pts.filter(Boolean);
+  const bad = trip.stops.map((s, i) => s.trim() && !pts[i] ? s.trim() : null).filter(Boolean);
+  let html = "";
+  if (bad.length) html += `<p class="note" style="color:var(--bad)">Couldn't find: ${bad.map(esc).join(", ")}. Pick a city from the list.</p>`;
+  if (ok.length < 2 || filled.length < 2) {
+    $("#tripOut").innerHTML = html + `<p class="note">Type a From and To city to see miles, drive time and fuel cost.</p>`;
+    return;
+  }
+  let miles = 0;
+  for (let i = 1; i < ok.length; i++) miles += haversine(ok[i - 1], ok[i]) * ROAD_FACTOR;
+  miles = Math.round(miles);
+  const mpg = +$("#tripMpg").value || 6.5, fuel = +$("#tripFuel").value || 0, pay = +$("#tripPay").value || 0;
+  const gallons = miles / mpg, fuelCost = gallons * fuel, hours = miles / AVG_MPH;
+  const days = Math.max(1, Math.ceil(hours / HOURS_PER_DAY));
+  const money = n => "$" + Math.round(n).toLocaleString("en-US");
+  const tiles = [[miles.toLocaleString("en-US"), "Miles (about)", true],
+    [`${Math.round(hours)} hrs`, `Driving, about ${days} day${days > 1 ? "s" : ""}`],
+    [money(fuelCost), `Fuel (${Math.round(gallons)} gal)`]];
+  if (pay) tiles.push(["$" + (pay / miles).toFixed(2), "Rate per mile", true], [money(pay - fuelCost), "Left after fuel"]);
+  else tiles.push(["$" + (fuelCost / miles).toFixed(2), "Fuel cost per mile"]);
+  const a = ok[0], b = ok[ok.length - 1];
+  const tzA = cityTz(a[1], a[2], a[3]), tzB = cityTz(b[1], b[2], b[3]);
+  const diff = tzOffset(tzB) - tzOffset(tzA);
+  const short = tz => tzTime(tz, { timeZoneName: "short" });
+  html += `<div class="stats">${tiles.map(([n, k, big]) => `<div class="stat${big ? " big" : ""}"><div class="n">${n}</div><div class="k">${k}</div></div>`).join("")}</div>
+    <p class="note">🕗 Now in ${esc(a[0])}: <b>${short(tzA)}</b> · in ${esc(b[0])}: <b>${short(tzB)}</b>${diff ? ` (${Math.abs(diff)} hour${Math.abs(diff) > 1 ? "s" : ""} ${diff > 0 ? "ahead" : "behind"})` : " (same time)"}</p>
+    <p class="note">Miles are an estimate from the map. Check exact miles in your truck GPS or load board before you book.</p>`;
+  $("#tripOut").innerHTML = html;
+}
+function saveTripPrefs() {
+  try { localStorage.setItem("dw-trip", JSON.stringify({ mpg: $("#tripMpg").value, fuel: $("#tripFuel").value })); } catch {}
+}
+function wireMap() {
+  let prefs = {};
+  try { prefs = JSON.parse(localStorage.getItem("dw-trip") || "{}"); } catch {}
+  $("#tripMpg").value = prefs.mpg || "6.5";
+  $("#tripFuel").value = prefs.fuel || "6.29";
+  renderTripStops(); renderTrip();
+  const refresh = () => { renderTrip(); drawMap(); };
+  $("#tripStops").addEventListener("input", e => {
+    const i = e.target.dataset.trip; if (i === undefined) return;
+    trip.stops[+i] = e.target.value;
+    renderTrip();
+  });
+  $("#tripStops").addEventListener("change", drawMap);
+  $("#tripStops").addEventListener("click", e => {
+    const b = e.target.closest("[data-unstop]"); if (!b) return;
+    trip.stops.splice(+b.dataset.unstop, 1); renderTripStops(); refresh();
+  });
+  $("#tripAdd").addEventListener("click", () => {
+    trip.stops.splice(trip.stops.length - 1, 0, ""); renderTripStops();
+    $(`[data-trip="${trip.stops.length - 2}"]`).focus();
+  });
+  $("#tripSwap").addEventListener("click", () => { trip.stops.reverse(); renderTripStops(); refresh(); });
+  $("#tripClear").addEventListener("click", () => { trip.stops = ["", ""]; $("#tripPay").value = ""; renderTripStops(); refresh(); });
+  ["#tripMpg", "#tripFuel", "#tripPay"].forEach(id => $(id).addEventListener("input", () => { saveTripPrefs(); renderTrip(); }));
+  $("#mapBox").addEventListener("click", e => { const p = e.target.closest("[data-st]"); if (p) selectState(p.dataset.st); });
+  $("#mapFind").addEventListener("change", e => {
+    const v = e.target.value;
+    const st = findState(v) || findCity(v)?.[1];
+    if (!st) { toast("Couldn't find that. Pick a city or state from the list."); return; }
+    selectState(st);
+    const c = findCity(v);
+    if (c && !findState(v)) {
+      const free = trip.stops.findIndex(s => !s.trim());
+      if (free >= 0) { trip.stops[free] = c[0] + ", " + c[1]; renderTripStops(); renderTrip(); drawMap(); toast(`Added ${c[0]} to your trip`); }
+    }
+    e.target.value = "";
+  });
+  $("#stateInfo").addEventListener("click", e => {
+    if (!e.target.closest("#mapFindCarriers")) return;
+    $("#state").value = mapState; $("#city").value = ""; $("#zip").value = "";
+    location.hash = "find";
+    run(false);
+  });
+  setInterval(() => { if (state.view === "map") { renderTzLegend(); renderStateInfo(); } }, 30000);
 }
 
 /* ===================== My account ===================== */

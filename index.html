@@ -1057,7 +1057,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
         <tbody id="adminRows"></tbody>
       </table>
     </div>
-    <p class="note">Free: 60 leads and 150 searches a day. Pro: 300 leads and 1,000 searches a day (change in the code under PRO_LIMITS). A plan change shows for the user the next time they open the app.</p>
+    <p class="note">Free: 60 leads and 20 searches a day. Pro: 300 leads and 300 searches a day (change in the code under PRO_LIMITS). A plan change shows for the user the next time they open the app.</p>
   </section>
 
   <!-- ============ SIGN UP / LOG IN ============ -->
@@ -1187,6 +1187,13 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
 /* Login and cloud sync. Paste your Supabase project URL and anon/publishable key here; leave empty to run without accounts. */
 const SUPABASE_URL = "https://nxyswoeryavlqamphbrp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54eXN3b2VyeWF2bHFhbXBoYnJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4MTMxOTUsImV4cCI6MjEwOTM4OTE5NX0.4SVKtZWqm1I_gjuuauOf-uzBql2Y1wrA_PUxr8vYtB0";
+/* An email link that failed (expired or already used) comes back as #error=...; remember it so the login page can say so. */
+let linkError = (() => {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const code = h.get("error_code") || h.get("error");
+  if (code) history.replaceState(null, "", location.pathname + location.search);
+  return code;
+})();
 const sb = SUPABASE_URL && SUPABASE_KEY && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 let session = null;
 
@@ -1357,6 +1364,7 @@ const fromSaved = raw => {
   for (const [k, c] of Object.entries(carriers)) {
     if (!c || typeof c !== "object") { delete carriers[k]; continue; }
     c.dot = Number(c.dot) || Number(k) || 0;
+    ["mc", "name", "dba", "phone", "cell", "email", "street", "city", "state", "zip"].forEach(f => (c[f] = typeof c[f] === "string" ? c[f] : c[f] == null ? "" : String(c[f])));
     ["trucks", "drivers", "cdl"].forEach(f => (c[f] = Number(c[f]) || 0));
     c.miles = Number(c.miles) || null;
     ["people", "equipment", "cargo", "authTypes"].forEach(f => (c[f] = Array.isArray(c[f]) ? c[f].map(String) : []));
@@ -1367,11 +1375,19 @@ const fromSaved = raw => {
     l.log = Array.isArray(l.log) ? l.log.filter(e => e && typeof e === "object").map(e => ({ t: Number(e.t) || Date.now(), kind: String(e.kind || "note"), text: String(e.text || "") })) : [];
     l.added = Number(l.added) || Date.now(); l.updated = Number(l.updated) || Date.now();
     l.customer = obj(l.customer);
-    if (l.followUp && isNaN(new Date(l.followUp))) l.followUp = null;
+    if (l.followUp && (typeof l.followUp !== "string" || isNaN(new Date(l.followUp)))) l.followUp = null;
+  }
+  const brokers = obj(raw.brokers);
+  for (const o of [carriers, leads, brokers]) ["__proto__", "constructor", "prototype"].forEach(k => Object.prototype.hasOwnProperty.call(o, k) && delete o[k]);
+  for (const [k, b] of Object.entries(brokers)) {
+    if (!b || typeof b !== "object") { delete brokers[k]; continue; }
+    for (const [f, v] of Object.entries(b)) if (!["added", "updated"].includes(f)) b[f] = v == null ? "" : typeof v === "string" ? v : String(v);
+    if (!["good", "ok", "avoid"].includes(b.rating)) b.rating = "good";
+    b.id = b.id || k; b.added = Number(b.added) || Date.now(); b.updated = Number(b.updated) || b.added;
   }
   const times = v => Object.fromEntries(Object.entries(obj(v)).map(([k, t]) => [k, Number(t) || 0]).filter(([, t]) => t));
   const del = obj(raw.deleted), st = obj(raw.stamps);
-  return { carriers, leads, me: obj(raw.me), templates: obj(raw.templates), brokers: obj(raw.brokers),
+  return { carriers, leads, me: obj(raw.me), templates: obj(raw.templates), brokers,
     deleted: { leads: times(del.leads), brokers: times(del.brokers) }, stamps: { me: Number(st.me) || 0, templates: Number(st.templates) || 0 } };
 };
 /* Merging two copies of the saved data (this device and the account), so edits made on another device are never lost.
@@ -1433,8 +1449,8 @@ function loadDb() {
         const stage = map[v.status] || "new";
         db.leads[dot] = { stage, followUp: null, log: v.note ? [{ t: v.updated || Date.now(), kind: "note", text: v.note }] : [], customer: {}, added: v.updated || Date.now(), updated: v.updated || Date.now() };
       }
+      localStorage.setItem(STORE_KEY, JSON.stringify(db));
       localStorage.removeItem("carrier-scout-leads");
-      saveDb();
     }
   } catch {}
 }
@@ -1442,6 +1458,7 @@ function loadDb() {
 let savedParts = { me: "{}", templates: "{}" };
 const snapParts = () => (savedParts = { me: JSON.stringify(db.me), templates: JSON.stringify(db.templates) });
 function saveDb() {
+  if (sb && !session) return; // logged out: never overwrite the copy kept for the next log-in
   for (const part of ["me", "templates"]) {
     const j = JSON.stringify(db[part]);
     if (j !== savedParts[part]) { db.stamps = { ...db.stamps, [part]: Date.now() }; savedParts[part] = j; }
@@ -1470,10 +1487,14 @@ const DIALERS = {
   copy:   { label: "Just copy the number", href: () => "#" }
 };
 const dialer = () => (DIALERS[db.me?.dialer] ? db.me.dialer : "tel");
-function callAttrs(phone) {
+function callAttrs(phone, dot) {
   const D = DIALERS[dialer()], d = digits(phone).slice(-10);
-  return `href="${esc(D.href(d))}"${D.web ? ' target="_blank" rel="noopener"' : ""} data-callnum="${esc(fmtPhone(phone))}"`;
+  return `href="${esc(D.href(d))}"${D.web ? ' target="_blank" rel="noopener"' : ""} data-callnum="${esc(fmtPhone(phone))}"${dot ? ` data-take="${+dot}"` : ""}`;
 }
+/* After today's free leads are used, phone and email stay hidden for carriers not taken today. */
+const contactLocked = dot => !!dot && !isTaken(+dot) && leadsLeft() <= 0;
+const LOCKED_SHORT = `<span class="sub" title="Today's free leads are used. More tomorrow.">🔒 More tomorrow</span>`;
+const LOCKED_LONG = `<span class="sub">🔒 You've used today's free leads. This carrier's phone and email unlock tomorrow.</span>`;
 const dialerSelect = () => `<label class="sub dialpick">Call with: <select data-dialer aria-label="Calling app">${Object.entries(DIALERS).map(([k, v]) => `<option value="${k}"${k === dialer() ? " selected" : ""}>${v.label}</option>`).join("")}</select></label>`;
 const fmtDate = ymd => { if (!ymd || ymd.length < 8) return ""; const d = new Date(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)); return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); };
 const isoToYmd = s => (s || "").replaceAll("-", "");
@@ -1531,9 +1552,16 @@ function tickTimes() {
   });
 }
 
-function toast(msg) {
+/* One CSV cell. Text starting with = + - @ (or a tab/return) is prefixed with ' so Excel and Google Sheets
+   show it as text instead of running it as a formula: names and notes come from carriers and users. */
+const csvCell = v => {
+  let s = String(v ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+function toast(msg, ms = 2400) {
   const t = $("#toast"); t.textContent = msg; t.hidden = false;
-  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2400);
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), ms);
 }
 function copyText(text, done) {
   const fallback = () => {
@@ -1634,21 +1662,30 @@ function setFollowUp(dot, when) {
   saveDb();
 }
 function removeLead(dot) { delete db.leads[dot]; delete db.carriers[dot]; db.deleted.leads[dot] = Date.now(); saveDb(); }
-const tomorrowAt = (h) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, 0, 0, 0); return d; };
+/* Tomorrow at hour h. With the carrier's time zone, that's h o'clock where the carrier is (10 AM in Texas),
+   not on the dispatcher's clock (10 AM in Pakistan is midnight in Texas). */
+function tomorrowAt(h, tz) {
+  if (!tz) { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, 0, 0, 0); return d; }
+  const [y, m, day] = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date()).split("-").map(Number);
+  const guess = new Date(Date.UTC(y, m - 1, day + 1, h));
+  const offsetMin = (new Date(guess.toLocaleString("en-US", { timeZone: tz })) - new Date(guess.toLocaleString("en-US", { timeZone: "UTC" }))) / 6e4;
+  return new Date(guess.getTime() - offsetMin * 6e4);
+}
+const carrierTz = dot => STATE_TZ[carrierFor(+dot)?.state] || null;
 
 const CALL_OUTCOMES = {
-  noanswer:   { label: "📵 No answer",      log: "Called, no answer",            stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => tomorrowAt(10) },
-  voicemail:  { label: "📩 Left voicemail", log: "Called, left voicemail",       stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 1); return d; } },
-  interested: { label: "👍 Interested",     log: "Talked, interested",           stage: l => ["negotiating", "signed"].includes(l.stage) ? l.stage : "interested", follow: () => tomorrowAt(11) },
-  notnow:     { label: "⏳ Call me later",  log: "Talked, not ready yet",        stage: l => l.stage === "new" ? "contacted" : l.stage, follow: () => { const d = tomorrowAt(10); d.setDate(d.getDate() + 6); return d; } },
-  no:         { label: "👎 Not interested", log: "Talked, not interested",       stage: () => "lost", follow: () => null }
+  noanswer:   { label: "📵 No answer",      log: "Called, no answer",            stage: l => l.stage === "new" ? "contacted" : l.stage, follow: tz => tomorrowAt(10, tz) },
+  voicemail:  { label: "📩 Left voicemail", log: "Called, left voicemail",       stage: l => l.stage === "new" ? "contacted" : l.stage, follow: tz => { const d = tomorrowAt(10, tz); d.setDate(d.getDate() + 1); return d; } },
+  interested: { label: "👍 Interested",     log: "Talked, interested",           stage: l => ["negotiating", "signed"].includes(l.stage) ? l.stage : "interested", follow: tz => tomorrowAt(11, tz) },
+  notnow:     { label: "⏳ Call me later",  log: "Talked, not ready yet",        stage: l => l.stage === "new" ? "contacted" : l.stage, follow: tz => { const d = tomorrowAt(10, tz); d.setDate(d.getDate() + 6); return d; } },
+  no:         { label: "👎 Not interested", log: "Talked, not interested",       stage: () => "lost", follow: tz => null }
 };
 function logCall(dot, key) {
   const o = CALL_OUTCOMES[key], l = ensureLead(dot);
   l.log.unshift({ t: Date.now(), kind: "call", text: o.log });
   const next = o.stage(l);
   if (next !== l.stage) { l.log.unshift({ t: Date.now() + 1, kind: "stage", text: `Moved to ${STAGE_LABEL[next]}` }); l.stage = next; }
-  const f = o.follow();
+  const f = o.follow(carrierTz(dot));
   l.followUp = f ? f.toISOString() : null;
   l.updated = Date.now();
   saveDb();
@@ -1816,7 +1853,6 @@ async function run(append = false, opts = {}) {
       setStatus("Searching the FMCSA census…");
       census = await censusByLocation(f, state.offset, ctrl.signal);
       pageFull = census.length === PAGE;
-      state.offset += census.length;
     } else {
       setStatus(f.mode === "date" ? "Finding new authority grants…" : "Finding MC numbers in that range…");
       cands = f.mode === "date" ? await candidatesByDate(f, ctrl.signal) : await candidatesByMc(f, ctrl.signal);
@@ -1831,14 +1867,16 @@ async function run(append = false, opts = {}) {
     setStatus(`Checking authority for ${dots.length.toLocaleString()} carriers…`);
     const auth = dots.length ? await verify(dots, ctrl.signal) : new Map();
     if (runId !== state.runId) return;
+    if (f.mode === "location") state.offset += census.length;
+    let refreshed = false;
     for (const r of census) {
       const dot = num(r.dot_number), a = auth.get(dot) || { state: "none" }, c = cands.get(dot) || {};
       if (a.state !== "active") { state.excluded[a.state] = (state.excluded[a.state] || 0) + 1; continue; }
       const carrier = toCarrier(r, { mc: a.mc || c.mc, authDate: c.authDate, authEvent: c.authEvent, authTypes: a.types, authSource: a.source });
       state.results.push({ dot, c: carrier });
-      if (db.carriers[dot]) db.carriers[dot] = carrier; // refresh saved copies with today's data
+      if (db.carriers[dot] && JSON.stringify(db.carriers[dot]) !== JSON.stringify(carrier)) { db.carriers[dot] = carrier; refreshed = true; } // refresh saved copies with today's data
     }
-    saveDb();
+    if (refreshed) saveDb();
     finish(f, pageFull);
   } catch (e) {
     if (e.name === "AbortError") return;
@@ -1902,7 +1940,8 @@ function dueBadge(lead) {
 }
 function phoneCell(c) {
   const phone = fmtPhone(c.phone);
-  return phone ? `<span class="phone"><a ${callAttrs(c.phone)} data-stop>${esc(phone)}</a><button class="icon" type="button" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`;
+  if (phone && contactLocked(c.dot)) return LOCKED_SHORT;
+  return phone ? `<span class="phone"><a ${callAttrs(c.phone, c.dot)} data-stop>${esc(phone)}</a><button class="icon" type="button" data-take="${c.dot}" data-copy="${esc(phone)}" aria-label="Copy phone number">${ICON_COPY}</button></span>` : `<span class="sub">No phone</span>`;
 }
 function avatar(name, big) {
   const words = titleCase(name).replace(/\b(LLC|Inc|Corp|Co|Ltd|The)\b\.?/g, "").trim().split(/\s+/).filter(w => /^[A-Za-z0-9]/.test(w));
@@ -1953,7 +1992,7 @@ function renderFind() {
       <td class="c-status"><span class="pill">● Active</span><div class="sub">MC &amp; USDOT</div>${readyPlaceholder(dot)}</td>
       <td class="c-person">${personCell(c)}</td>
       <td class="c-phone">${phoneCell(c)}</td>
-      <td class="email c-email">${c.email ? `<a href="mailto:${esc(c.email)}" data-stop>${esc(c.email)}</a>` : `<span class="sub">–</span>`}</td>
+      <td class="email c-email">${c.email ? (contactLocked(c.dot) ? LOCKED_SHORT : `<a href="mailto:${esc(c.email)}" data-take="${c.dot}" data-stop>${esc(c.email)}</a>`) : `<span class="sub">–</span>`}</td>
       <td class="c-loc">${esc(c.city)}, ${esc(c.state)} <span class="sub mono">${esc(c.zip.slice(0, 5))}</span><div>${tzBadge(c.state)}</div></td>
       <td class="num c-fleet">${fleet}<div class="sub">${drivers}</div></td>
       <td class="c-date" style="white-space:nowrap">${when}</td>
@@ -1991,7 +2030,7 @@ function todayItem(x, kind) {
       <div><span class="chipstage st-${l.stage}">${STAGE_LABEL[l.stage]}</span> ${dueBadge(l)} ${tzBadge(c.state, true)}</div></div></div>
     <div>${phoneCell(c)}${l.log[0] ? `<span class="lastnote" style="max-width:260px">${esc(l.log[0].text)}</span>` : ""}</div>
     <div class="acts">
-      ${c.phone ? `<a class="btn small" ${callAttrs(c.phone)} data-stop>Call</a>` : ""}
+      ${c.phone && !contactLocked(c.dot) ? `<a class="btn small" ${callAttrs(c.phone, c.dot)} data-stop>Call</a>` : ""}
       <button class="btn small" type="button" data-quick="noanswer" data-dot="${dot}">No answer</button>
       ${kind !== "new" ? `<button class="btn small" type="button" data-quick="done" data-dot="${dot}">Done</button>` : `<button class="btn small" type="button" data-quick="interested" data-dot="${dot}">Interested</button>`}
       <button class="btn small" type="button" data-open-btn="${dot}">Open</button>
@@ -2178,13 +2217,13 @@ function fillReady(dots) {
 /* ===================== Daily limits ===================== */
 /* Free daily allowance so dispatchers come back each day: a number of new leads per day (save, first call, export or
    copied phone each take one, and the same carrier only counts once a day), plus a generous search cap. Change the numbers here. */
-const FREE_LIMITS = { searchesPerDay: 150, leadsPerDay: 60 };
-const PRO_LIMITS = { searchesPerDay: 1000, leadsPerDay: 300 };
+const FREE_LIMITS = { searchesPerDay: 20, leadsPerDay: 60 };
+const PRO_LIMITS = { searchesPerDay: 300, leadsPerDay: 300 };
 const LIMITS = { ...FREE_LIMITS };
 function applyPlanLimits() { Object.assign(LIMITS, state.isPro ? PRO_LIMITS : FREE_LIMITS); renderLimits(); }
 const USAGE_KEY = "cs-usage";
 function usage() {
-  const today = localIso(new Date());
+  const today = karachiDay();
   let u = null;
   try { u = JSON.parse(localStorage.getItem(USAGE_KEY) || "null"); } catch {}
   if (!u || u.day !== today) u = { day: today, searches: 0, exported: 0, taken: [] };
@@ -2213,20 +2252,26 @@ function allowNewLead(dot) {
 function saveUsage(u) { try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch {} }
 /* Signed in: counts live on the account (so clearing the browser doesn't reset them). Not signed in: counted in this browser. */
 let cloudUsage = null;
-const usageNow = () => (session ? (cloudUsage || { searches: 0, exported: 0 }) : usage());
+let cloudUsageDay = null;
+const usageNow = () => {
+  if (!session) return usage();
+  if (cloudUsageDay !== karachiDay()) { cloudUsage = { searches: 0, exported: 0 }; cloudUsageDay = karachiDay(); } // new day: counts start again
+  return cloudUsage || { searches: 0, exported: 0 };
+};
 async function countUsage(kind, n = 1) {
   if (session && sb) {
     const cur = usageNow();
     cloudUsage = { searches: cur.searches + (kind === "search" ? n : 0), exported: cur.exported + (kind === "export" ? n : 0) };
     renderLimits();
     const { data, error } = await sb.rpc("bump_usage", { kind, amount: n });
-    if (!error && data && data[0]) cloudUsage = data[0];
+    if (!error && data && data[0]) { cloudUsage = data[0]; cloudUsageDay = karachiDay(); }
   } else {
     const u = usage();
     if (kind === "search") u.searches += n; else u.exported += n;
     saveUsage(u);
   }
   renderLimits();
+  if (kind === "export" && leadsLeft() <= 0) renderAll(); // hide the other carriers' phone numbers right away
 }
 const searchesLeft = () => Math.max(0, LIMITS.searchesPerDay - usageNow().searches);
 const leadsLeft = () => Math.max(0, LIMITS.leadsPerDay - usageNow().exported);
@@ -2279,8 +2324,8 @@ function renderCallMode() {
       <div><span class="sub">Ask for</span> <span class="cm-ask">${c.people.length ? esc(c.people.join(" or ")) : "The owner"}</span><div>${tzBadge(c.state, true)}</div></div>
     </div>
     <div class="cm-call">
-      <a class="btn primary" ${callAttrs(c.phone)}>📞 Call ${esc(fmtPhone(c.phone))}</a>
-      ${dialerSelect()}
+      ${contactLocked(dot) ? LOCKED_LONG : `<a class="btn primary" ${callAttrs(c.phone, dot)}>📞 Call ${esc(fmtPhone(c.phone))}</a>
+      ${dialerSelect()}`}
     </div>
     <section style="display:grid;gap:8px">
       <h4 class="label" style="margin:0">After the call, tap what happened</h4>
@@ -2298,11 +2343,11 @@ function renderCallMode() {
         <div class="sub">${esc(leadScore(c).why.join(" · "))}</div>
         <div class="sub">${c.trucks} ${c.trucks === 1 ? "truck" : "trucks"}${c.equipment.length ? " · " + esc(c.equipment.slice(0, 3).join(", ")) : ""}${lead ? ` · <span class="chipstage st-${lead.stage}">${STAGE_LABEL[lead.stage]}</span>` : ""} · DOT ${dot}</div>
         ${last ? `<div class="sub">Last time: ${esc(last.text)} (${esc(fmtWhen(last.t))})</div>` : ""}
-        <div class="cm-call"><div class="row">
-          <a class="btn" href="https://wa.me/1${d10}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
-          <a class="btn" href="sms:+1${d10}?&body=${msg}">Text</a>
-          <button class="btn" type="button" data-copy="${esc(fmtPhone(c.phone))}">Copy number</button>
-        </div></div>
+        ${contactLocked(dot) ? "" : `<div class="cm-call"><div class="row">
+          <a class="btn" href="https://wa.me/1${d10}?text=${msg}" target="_blank" rel="noopener" data-take="${dot}">WhatsApp</a>
+          <a class="btn" href="sms:+1${d10}?&body=${msg}" data-take="${dot}">Text</a>
+          <button class="btn" type="button" data-take="${dot}" data-copy="${esc(fmtPhone(c.phone))}">Copy number</button>
+        </div></div>`}
       </div>
     </details>`;
   fillInsurance(dot);
@@ -2313,12 +2358,13 @@ function renderCallMode() {
 /* While the app is open in a tab, a follow-up that comes due shows a browser notification (if allowed) and an in-page toast. */
 function checkReminders() {
   const now = Date.now();
+  let changed = false;
   for (const [dot, l] of Object.entries(db.leads)) {
     if (!l.followUp || l.notified === l.followUp) continue;
     const t = new Date(l.followUp).getTime();
     if (t > now || now - t > 12 * 36e5) continue;
     const c = carrierFor(+dot);
-    l.notified = l.followUp;
+    l.notified = l.followUp; changed = true;
     if (!c) continue;
     const body = [c.people[0] && `Ask for ${c.people[0]}`, fmtPhone(c.phone), l.log.find(e => e.kind === "note")?.text].filter(Boolean).join(" · ");
     toast(`⏰ Time to call ${titleCase(c.name)}`);
@@ -2329,7 +2375,7 @@ function checkReminders() {
       } catch {}
     }
   }
-  saveDb();
+  if (changed) saveDb();
 }
 
 /* ===================== Brokers ===================== */
@@ -2351,7 +2397,7 @@ function renderBrokers() {
     <td class="email">${b.email ? `<a href="mailto:${esc(b.email)}" data-stop>${esc(b.email)}</a>` : "–"}</td>
     <td class="num">${b.pay ? esc(b.pay) + " days" : "–"}</td>
     <td>${esc(b.credit || "–")}</td>
-    <td><span class="chipstage rate-${b.rating || "good"}">${RATINGS[b.rating || "good"]}</span></td>
+    <td><span class="chipstage rate-${RATINGS[b.rating] ? b.rating : "good"}">${RATINGS[b.rating] || RATINGS.good}</span></td>
     <td class="sub" style="max-width:260px">${esc(b.notes || "")}</td>
   </tr>`).join("");
 }
@@ -2450,8 +2496,8 @@ function renderDetail() {
   const waHref = `https://wa.me/1${d10}?text=${textMsg}`, smsHref = `sms:+1${d10}?&body=${textMsg}`;
   const emails = ["intro", "followup", "onboarding"].map(k => {
     const t = template(k);
-    const href = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(fillTemplate(t.subject, c))}&body=${encodeURIComponent(fillTemplate(t.body, c))}` : "";
-    return `<div class="buttons">${href ? `<a class="btn small" href="${href}">✉ ${esc(t.title)}</a>` : `<span class="sub">${esc(t.title)}</span>`}<button class="btn small" type="button" data-copy-tpl="${k}">Copy</button></div>`;
+    const href = c.email && !contactLocked(dot) ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(fillTemplate(t.subject, c))}&body=${encodeURIComponent(fillTemplate(t.body, c))}` : "";
+    return `<div class="buttons">${href ? `<a class="btn small" href="${href}" data-take="${dot}">✉ ${esc(t.title)}</a>` : `<span class="sub">${esc(t.title)}</span>`}<button class="btn small" type="button" data-copy-tpl="${k}">Copy</button></div>`;
   }).join("");
   $("#sheet").innerHTML = `
     <header>
@@ -2469,15 +2515,15 @@ function renderDetail() {
       <div><div class="sub">Ask for</div><div class="who">${c.people.length ? esc(c.people.join(" or ")) : "The owner (no name listed)"}</div>${tzBadge(c.state, true)}</div>
       ${insPlaceholder(dot)}
       <div data-ready="${dot}" data-agent>${readyHtml(readyCache.get(dot))}</div>
-      <div class="actions">
-        ${phone ? `<a class="btn primary" ${callAttrs(c.phone)}>📞 Call ${esc(phone)}</a>
-          <a class="btn" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>
-          <a class="btn" href="${smsHref}">Text</a>
-          <button class="btn" type="button" data-copy="${esc(phone)}">Copy number</button>` : `<span class="sub">No phone number on file</span>`}
-        ${cell && cell !== phone ? `<a class="btn" ${callAttrs(c.cell)}>Cell ${esc(cell)}</a>` : ""}
+      ${contactLocked(dot) ? `<div class="actions">${LOCKED_LONG}</div>` : `<div class="actions">
+        ${phone ? `<a class="btn primary" ${callAttrs(c.phone, dot)}>📞 Call ${esc(phone)}</a>
+          <a class="btn" href="${waHref}" target="_blank" rel="noopener" data-take="${dot}">WhatsApp</a>
+          <a class="btn" href="${smsHref}" data-take="${dot}">Text</a>
+          <button class="btn" type="button" data-take="${dot}" data-copy="${esc(phone)}">Copy number</button>` : `<span class="sub">No phone number on file</span>`}
+        ${cell && cell !== phone ? `<a class="btn" ${callAttrs(c.cell, dot)}>Cell ${esc(cell)}</a>` : ""}
       </div>
       ${phone ? dialerSelect() : ""}
-      <div class="sub">${c.email ? `${esc(c.email)} <button class="btn small" type="button" data-copy="${esc(c.email)}">Copy email</button>` : "No email on file"}</div>
+      <div class="sub">${c.email ? `${esc(c.email)} <button class="btn small" type="button" data-take="${dot}" data-copy="${esc(c.email)}">Copy email</button>` : "No email on file"}</div>`}
     </div>
 
     <section>
@@ -2557,7 +2603,7 @@ function csv(list = visibleResults()) {
   const head = ["Lead score", "Lead stage", "Follow-up", "Last note", "MC", "USDOT", "MC status", "USDOT status", "Legal name", "DBA", "Contact name", "Other contacts",
     "Phone", "Cell", "Email", "Street", "City", "State", "ZIP", "Power units", "Drivers", "CDL drivers", "Equipment", "Cargo",
     "Authority event", "Authority date", "Registered", "MCS-150 date", "Safety rating"];
-  const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const q = csvCell;
   const lines = list.map(({ dot, c }) => {
     const l = leadOf(dot);
     const h = leadScore(c);
@@ -2650,6 +2696,10 @@ function resetFilters() {
 }
 
 function init() {
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-take]");
+    if (t && !allowNewLead(+t.dataset.take)) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
   if (sb) document.body.classList.add("needauth");
   loadDb();
   $("#state").innerHTML = `<option value="">Any state</option>` + STATES.map(s => `<option>${s}</option>`).join("");
@@ -2761,7 +2811,7 @@ function init() {
     const quick = e.target.closest("[data-quick]");
     if (quick) {
       const dot = +quick.dataset.dot, k = quick.dataset.quick;
-      if (k === "done") { const l = ensureLead(dot); l.followUp = null; l.log.unshift({ t: Date.now(), kind: "followup", text: "Follow-up done" }); saveDb(); toast("Follow-up cleared"); }
+      if (k === "done") { const l = ensureLead(dot); l.followUp = null; l.updated = Date.now(); l.log.unshift({ t: Date.now(), kind: "followup", text: "Follow-up done" }); saveDb(); toast("Follow-up cleared"); }
       else { const f = logCall(dot, k); toast(f ? `Logged. Next follow-up ${fmtWhen(f)}` : "Logged"); }
       renderAll(); return;
     }
@@ -2780,7 +2830,7 @@ function init() {
     const col = e.target.closest("[data-col]"); if (!col) return;
     e.preventDefault();
     const dot = +e.dataTransfer.getData("text/plain");
-    if (dot && stageOf(dot) !== col.dataset.col) { setStage(dot, col.dataset.col); toast(`Moved to ${STAGE_LABEL[col.dataset.col]}`); }
+    if (dot && db.leads[dot] && stageOf(dot) !== col.dataset.col) { setStage(dot, col.dataset.col); toast(`Moved to ${STAGE_LABEL[col.dataset.col]}`); }
     renderAll();
   });
 
@@ -2799,8 +2849,8 @@ function init() {
     if (st) { setStage(dot, st.dataset.setstage); renderAll(); return; }
     const fo = e.target.closest("[data-follow]");
     if (fo) {
-      const k = fo.dataset.follow, now = new Date();
-      const when = k === "2h" ? new Date(now.getTime() + 2 * 36e5) : k === "tom" ? tomorrowAt(10) : k === "3d" ? (() => { const x = tomorrowAt(10); x.setDate(x.getDate() + 2); return x; })() : k === "1w" ? (() => { const x = tomorrowAt(10); x.setDate(x.getDate() + 6); return x; })() : null;
+      const k = fo.dataset.follow, now = new Date(), tz = carrierTz(dot);
+      const when = k === "2h" ? new Date(now.getTime() + 2 * 36e5) : k === "tom" ? tomorrowAt(10, tz) : k === "3d" ? (() => { const x = tomorrowAt(10, tz); x.setDate(x.getDate() + 2); return x; })() : k === "1w" ? (() => { const x = tomorrowAt(10, tz); x.setDate(x.getDate() + 6); return x; })() : null;
       setFollowUp(dot, when); toast(when ? `Follow-up set for ${fmtWhen(when)}` : "Follow-up cleared"); renderAll(); return;
     }
     if (e.target.id === "addNote") { addNote(dot); return; }
@@ -2841,8 +2891,13 @@ function init() {
     try {
       const data = JSON.parse(await file.text());
       if (!data || typeof data.leads !== "object") throw new Error();
-      db = fromSaved(data); snapParts();
-      saveDb(); renderAll(); toast(`Restored ${Object.keys(db.leads).length} carriers from backup`);
+      // Merge the backup into what's here (nothing newer is lost). Restored items count as just changed,
+      // so a delete made on another device doesn't remove them again.
+      const b = fromSaved(data), now = Date.now();
+      Object.values(b.leads).forEach(l => (l.updated = now));
+      Object.values(b.brokers).forEach(r => (r.updated = now));
+      db = mergeDb(db, b); snapParts();
+      saveDb(); renderAll(); toast(`Restored ${Object.keys(b.leads).length} carriers from backup and kept everything already here`, 4000);
     } catch { toast("That file isn't a DispatchWala backup."); }
     e.target.value = "";
   });
@@ -3080,7 +3135,7 @@ function cityTz(st, lat, lon) {
   if (st === "SD" && lon < -100.6) return "America/Denver";
   if (st === "NE" && lon < -101.3) return "America/Denver";
   if (st === "KS" && lon < -101.5) return "America/Denver";
-  if (st === "OR" && lon < -117.3 && lat < 44.5) return "America/Boise";
+  if (st === "OR" && lon > -118.2 && lat < 44.5) return "America/Boise";
   return STATE_TZ[st] || "America/Chicago";
 }
 const tzTime = (tz, opts = {}) => new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit", ...opts }).format(new Date());
@@ -3269,9 +3324,11 @@ async function syncRoute() {
     renderTrip();
     if (ORS_KEY) {
       const saved = routeCache(t.key);
-      try { route = { key: t.key, exact: true, ...(saved || await fetchRoute(t.all)) }; if (!saved) routeCache(t.key, { legs: route.legs, coords: route.coords, wp: route.wp }); }
-      catch (e) { route = { key: t.key, failed: true, busy: e.status === 429 }; }
-      if (route.key !== tripState().key) return;
+      let r;
+      try { r = { key: t.key, exact: true, ...(saved || await fetchRoute(t.all)) }; if (!saved) routeCache(t.key, { legs: r.legs, coords: r.coords, wp: r.wp }); }
+      catch (e) { r = { key: t.key, failed: true, busy: e.status === 429 }; }
+      if (t.key !== tripState().key) return;
+      route = r;
     }
     drawMap(); renderTrip();
   }
@@ -3357,12 +3414,18 @@ function renderTrip() {
     tripText = "";
     return;
   }
+  const hi = t.all.filter(c => c[1] === "HI").length;
+  if (hi && hi < t.all.length) {
+    $("#tripOut").innerHTML = html + `<p class="note" style="color:var(--warn)">There's no road to Hawaii, so a truck can't drive this trip. Pick cities on the mainland (or all in Hawaii).</p>`;
+    tripText = "";
+    return;
+  }
   const exact = route && route.key === t.key && route.exact;
   const legs = exact ? route.legs : estLegs(t.all);
   const emptyMi = t.empty ? Math.round(legs[0]) : 0;
   const loaded = Math.round(legs.slice(t.empty ? 1 : 0).reduce((s, x) => s + x, 0));
   const total = loaded + emptyMi;
-  const mpg = +$("#tripMpg").value || 6.5, fuel = +$("#tripFuel").value || 0, pay = +$("#tripPay").value || 0;
+  const mpg = +$("#tripMpg").value || 6.5, fuel = +$("#tripFuel").value || 0, pay = Math.max(0, +$("#tripPay").value || 0);
   const gallons = total / mpg, fuelCost = gallons * fuel, hours = total / AVG_MPH;
   const days = Math.max(1, Math.ceil(hours / HOURS_PER_DAY));
   const money = n => "$" + Math.round(n).toLocaleString("en-US");
@@ -3452,6 +3515,7 @@ function wireMap() {
   });
   $("#stateInfo").addEventListener("click", e => {
     if (!e.target.closest("#mapFindCarriers")) return;
+    setMode("location");
     $("#state").value = mapState; $("#city").value = ""; $("#zip").value = "";
     location.hash = "find";
     run(false);
@@ -3484,12 +3548,13 @@ function wireAccount() {
   $("#acSave").addEventListener("click", async e => {
     const name = $("#acName").value.trim(), phone = $("#acPhone").value.trim();
     if (!name) { toast("Please enter your name."); return; }
-    e.currentTarget.disabled = true;
+    const btn = e.currentTarget; // currentTarget is null after an await
+    btn.disabled = true;
     const [{ error }, { error: e2 }] = await Promise.all([
       sb.rpc("update_my_profile", { new_name: name, new_phone: phone }),
       sb.auth.updateUser({ data: { full_name: name, phone } })
     ]);
-    e.currentTarget.disabled = false;
+    btn.disabled = false;
     if (error || e2) { toast("Couldn't save: " + (error || e2).message); return; }
     $("#userName").textContent = name;
     toast("Details saved");
@@ -3498,22 +3563,27 @@ function wireAccount() {
     const p1 = $("#acPass").value, p2 = $("#acPass2").value;
     if (p1.length < 6) { toast("Password must be at least 6 characters."); return; }
     if (p1 !== p2) { toast("The two passwords don't match."); return; }
-    e.currentTarget.disabled = true;
+    const btn = e.currentTarget;
+    btn.disabled = true;
     const { error } = await sb.auth.updateUser({ password: p1 });
-    e.currentTarget.disabled = false;
+    btn.disabled = false;
     if (error) { toast(friendlyAuthError(error)); return; }
     $("#acPass").value = ""; $("#acPass2").value = "";
     toast("Password changed");
   });
   $("#acDelBtn").addEventListener("click", async e => {
     if ($("#acDel").value.trim() !== "DELETE") { toast('Type DELETE in the box to confirm.'); return; }
-    e.currentTarget.disabled = true;
+    const btn = e.currentTarget;
+    btn.disabled = true;
     const { error } = await sb.rpc("delete_my_account");
-    e.currentTarget.disabled = false;
+    btn.disabled = false;
     if (error) { toast("Couldn't delete the account: " + error.message); return; }
+    $("#acDel").value = "";
     clearTimeout(cloudTimer);
-    try { localStorage.removeItem(STORE_KEY); } catch {}
-    await sb.auth.signOut();
+    wipeOnLogout = true;
+    try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(OWNER_KEY); } catch {}
+    await sb.auth.signOut({ scope: "local" }).catch(() => {});
+    if (session) { session = null; onLoggedOut(); } // the account is gone, so sign-out may not report back
     toast("Your account has been deleted.");
   });
 }
@@ -3562,7 +3632,7 @@ async function setPlan(id, days, btn) {
   await loadAdmin();
 }
 function adminCsv() {
-  const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const q = csvCell;
   const head = ["Name", "Email", "WhatsApp", "Joined", "Last active", "Leads today", "Saved leads", "Plan", "Pro until"];
   const rows = adminUsers.map(u => [u.full_name, u.email, u.phone, fmtWhen(u.created_at), u.last_active || "", u.leads_today || 0, u.saved_leads || 0,
     isProUser(u) ? "Pro" : "Free", u.pro_until ? new Date(u.pro_until).toISOString().slice(0, 10) : ""].map(q).join(","));
@@ -3589,7 +3659,8 @@ function wireAdmin() {
    - Every write only succeeds if the account copy is still the one we last saw (updated_at = lastSyncedAt).
      If another device saved in between, we load its copy, merge, and try again. */
 let cloudTimer = null, cloudFailedOnce = false, cloudReady = false, cloudDirty = false, lastSyncedAt = null;
-let cloudQueue = Promise.resolve(), loadRetry = null, loadTries = 0, lastPull = 0;
+let cloudQueue = Promise.resolve(), loadRetry = null, loadTries = 0, lastPull = 0, wipeOnLogout = false;
+const OWNER_KEY = "dw-owner";
 const inCloudQueue = fn => (cloudQueue = cloudQueue.then(fn).catch(() => {}));
 const setSyncBanner = on => ($("#syncBanner").hidden = !on);
 function scheduleCloudSave() {
@@ -3674,13 +3745,20 @@ async function onLoggedIn() {
   const meta = session.user.user_metadata || {};
   $("#userName").textContent = meta.full_name || session.user.email;
   $("#userChip").hidden = false;
+  // This browser's saved copy belongs to one account. Use it only if it's this account's (or from before accounts existed).
+  try {
+    const owner = localStorage.getItem(OWNER_KEY);
+    if (owner && owner !== session.user.id) { localStorage.removeItem(STORE_KEY); db = emptyDb(); snapParts(); }
+    else loadDb();
+    localStorage.setItem(OWNER_KEY, session.user.id);
+  } catch {}
   setStatus("Loading your saved leads…");
   const [, { data: use }] = await Promise.all([
     loadCloud(),
     sb.from("usage").select("searches,exported").eq("user_id", session.user.id).eq("day", karachiDay()).maybeSingle()
   ]);
   setStatus("");
-  cloudUsage = use || { searches: 0, exported: 0 };
+  cloudUsage = use || { searches: 0, exported: 0 }; cloudUsageDay = karachiDay();
   const [{ data: adm }, { data: prof }] = await Promise.all([
     sb.rpc("is_admin"),
     sb.from("profiles").select("plan,pro_until").eq("id", session.user.id).maybeSingle()
@@ -3699,17 +3777,25 @@ async function onLoggedIn() {
 function onLoggedOut() {
   document.body.classList.add("needauth");
   $("#userChip").hidden = true;
-  // Clear this browser's copy so the next person on a shared computer can't see it. It stays safe in the account.
+  // After a normal log out (everything synced), clear this browser's copy so the next person on a shared computer can't see it.
+  // If the session just ran out, or changes haven't synced yet, keep the copy: it is merged back when the same account logs in
+  // again, and dropped if a different account logs in (OWNER_KEY).
+  if (wipeOnLogout) { try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(OWNER_KEY); } catch {} }
+  wipeOnLogout = false;
   cloudReady = false; cloudDirty = false; lastSyncedAt = null; loadTries = 0;
   clearTimeout(cloudTimer); clearTimeout(loadRetry); setSyncBanner(false);
   db = emptyDb(); snapParts();
-  try { localStorage.removeItem(STORE_KEY); } catch {}
   state.results = []; cloudUsage = null;
   state.isAdmin = false; state.isPro = false; adminUsers = [];
   $("#navAdmin").hidden = true; $("#userPlan").hidden = true;
   applyPlanLimits();
   showAuthPanel("signup");
   showView("auth");
+  if (linkError) {
+    showAuthPanel("forgot");
+    authMessage("This email link has expired or was already used. Type your email below to get a new link, and open only the newest email (links work once, for 1 hour).");
+    linkError = null;
+  }
 }
 function initAuth() {
   sb.auth.onAuthStateChange((event, s) => {
@@ -3782,7 +3868,19 @@ function wireAuth() {
     history.replaceState(null, "", siteUrl() + "#find");
     onLoggedIn();
   });
-  $("#logoutBtn").addEventListener("click", async () => { await cloudSaveNow(); await sb.auth.signOut(); toast("Logged out"); });
+  let logoutArmed = false;
+  $("#logoutBtn").addEventListener("click", async () => {
+    await cloudSaveNow();
+    const unsynced = cloudDirty || !cloudReady;
+    if (unsynced && !logoutArmed) {
+      logoutArmed = true; setTimeout(() => (logoutArmed = false), 10000);
+      toast("Some changes haven't reached your account yet (no internet?). They stay safe on this device. Click Log out again to log out anyway.", 8000);
+      return;
+    }
+    wipeOnLogout = !unsynced;
+    await sb.auth.signOut({ scope: "local" }); // only this device; stay logged in on your phone and other computers
+    toast("Logged out");
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden" && cloudTimer) cloudSaveNow();
     if (document.visibilityState === "visible") pullCloud();

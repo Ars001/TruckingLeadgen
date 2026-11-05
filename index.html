@@ -202,6 +202,12 @@ body.needauth .nav, body.needauth footer.src p:not(:first-child) { display: none
 .authmsg { border-radius: 10px; padding: 10px 12px; font-size: 13.5px; background: var(--bad-soft); color: var(--bad); }
 .authmsg.ok { background: var(--ok-soft); color: var(--ok); }
 .userchip { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.userlink { color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,.4); }
+.userlink:hover { border-bottom-style: solid; }
+.srcbars { display: grid; gap: 6px; }
+.srcbars div { display: grid; grid-template-columns: 90px minmax(0, 1fr) 48px; gap: 10px; align-items: center; font-size: 13px; }
+.srcbars i { display: block; height: 8px; border-radius: 999px; background: var(--accent); min-width: 2px; }
+.srcbars b { text-align: right; font-variant-numeric: tabular-nums; }
 .userchip .btn.small { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: inherit; }
 @media (max-width: 560px) { .live { display: none; } }
 .welcome { padding: 16px 18px; display: grid; gap: 10px; border-color: var(--accent); }
@@ -533,7 +539,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </a>
     <div class="bandright">
       <span class="live"><i></i> Live FMCSA data · updated daily</span>
-      <span class="userchip" id="userChip" hidden>👤 <span id="userName"></span> <span class="pill" id="userPlan" hidden>PRO</span> <button class="btn small" type="button" id="logoutBtn">Log out</button></span>
+      <span class="userchip" id="userChip" hidden>👤 <a href="#account" id="userName" class="userlink" title="My account"></a> <span class="pill" id="userPlan" hidden>PRO</span> <button class="btn small" type="button" id="logoutBtn">Log out</button></span>
       <button class="themebtn" type="button" id="themeBtn" aria-label="Switch light or dark theme">☀</button>
     </div>
   </div>
@@ -902,6 +908,41 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </div>
   </section>
 
+  <!-- ============ MY ACCOUNT ============ -->
+  <section class="view" id="view-account" hidden>
+    <div>
+      <h2 class="title">My account</h2>
+      <p class="lede">Your plan, your details and your password.</p>
+    </div>
+    <div class="twocol">
+      <div class="card panel">
+        <h3>Your plan</h3>
+        <div id="acctPlan"></div>
+        <div class="meter"><i id="acctBar" style="width:0%"></i></div>
+        <div class="sub" id="acctUsage"></div>
+      </div>
+      <div class="card panel">
+        <h3>Your details</h3>
+        <label class="field"><span>Email</span><input id="acEmail" disabled></label>
+        <label class="field"><span>Your name</span><input id="acName" autocomplete="name"></label>
+        <label class="field"><span>WhatsApp number</span><input id="acPhone" type="tel" autocomplete="tel"></label>
+        <div class="buttons"><button class="btn primary" type="button" id="acSave">Save details</button></div>
+      </div>
+      <div class="card panel">
+        <h3>Change password</h3>
+        <label class="field"><span>New password (6+ characters)</span><input id="acPass" type="password" autocomplete="new-password"></label>
+        <label class="field"><span>Type it again</span><input id="acPass2" type="password" autocomplete="new-password"></label>
+        <div class="buttons"><button class="btn primary" type="button" id="acPassBtn">Change password</button></div>
+      </div>
+      <div class="card panel">
+        <h3>Delete account</h3>
+        <p class="note">This permanently deletes your account, saved leads, notes and follow-ups. Download a backup first under Scripts &amp; settings if you want to keep them.</p>
+        <label class="field"><span>Type DELETE to confirm</span><input id="acDel" autocomplete="off"></label>
+        <div class="buttons"><button class="btn danger" type="button" id="acDelBtn">Delete my account</button></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ ADMIN (owner only) ============ -->
   <section class="view" id="view-admin" hidden>
     <div>
@@ -909,6 +950,13 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
       <p class="lede">Your users, who's active, and Pro plans. Only admins can see this page.</p>
     </div>
     <div class="tiles" id="adminTiles"></div>
+    <div class="card panel" id="adminVisitors"></div>
+    <div class="card panel">
+      <h3>💾 Backup</h3>
+      <p class="note" id="backupNote"></p>
+      <div class="buttons"><button class="btn primary" type="button" id="adminBackup">💾 Download full backup</button></div>
+      <p class="note">One file with all users, their saved leads, daily usage and visitor counts. Keep it somewhere safe (Google Drive, USB). The free Supabase plan doesn't make automatic backups, so download one every week.</p>
+    </div>
     <div class="toolbar">
       <div class="search">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
@@ -1003,9 +1051,10 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <!-- ============ PRIVACY ============ -->
   <section class="view" id="view-privacy" hidden>
     <div class="card guide">
-      <div><h2 class="title">Privacy Policy</h2><p class="lede">Last updated November 4, 2026.</p></div>
+      <div><h2 class="title">Privacy Policy</h2><p class="lede">Last updated November 5, 2026.</p></div>
       <div><h3>What we collect</h3><p>When you create an account we store your name, email, WhatsApp number and password (encrypted by our login provider, Supabase), plus your saved leads, notes, follow-ups, brokers, templates, settings and how many searches and exports you used each day. We use this only to run your account and its daily limits. We don't sell your data. A copy of your saved leads is also kept in your browser so the app works fast.</p></div>
-      <div><h3>Deleting your account</h3><p>To delete your account and everything stored with it, contact us from your account email and we will remove it.</p></div>
+      <div><h3>Visit counts</h3><p>We count visits to the app as daily totals only: how many visitors, which kind of site they came from (for example Google or WhatsApp) and whether they used a phone or a computer. No name, email, IP address or other personal detail is stored with these counts, and we use no advertising or tracking cookies.</p></div>
+      <div><h3>Deleting your account</h3><p>You can delete your account yourself on the My account page (click your name at the top). This removes your login, details, saved leads and usage records. You can also contact us from your account email and we will remove it.</p></div>
       <div><h3>Where data comes from</h3><p>When you search, your browser requests public carrier records directly from data.transportation.gov (U.S. Department of Transportation). Their privacy policy applies to those requests. Fonts are loaded from Google Fonts.</p></div>
       <div><h3>Calls, texts and emails</h3><p>Call, WhatsApp, text and email buttons open the app you choose (for example your phone, Google Voice or your email program). Those apps have their own privacy policies.</p></div>
       <div><h3>Deleting your data</h3><p>Clear your browser's site data for this page, or remove carriers from My leads, to delete what is stored. Backup files you download are yours to keep safe.</p></div>
@@ -2383,12 +2432,13 @@ function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-s
 
 /* ===================== navigation ===================== */
 const BASE_TITLE = document.title;
-const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy", "auth", "admin"];
+const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy", "auth", "admin", "account"];
 function showView(v) {
   if (!VIEWS.includes(v) || v === "auth") v = "find";
   if (sb && !session && !["terms", "privacy"].includes(v)) v = "auth";
   if (v === "admin" && !state.isAdmin) v = "find";
   if (v === "admin") loadAdmin();
+  if (v === "account") loadAccount();
   state.view = v;
   VIEWS.forEach(k => ($("#view-" + k).hidden = k !== v));
   const navKey = v === "brokers" ? "customers" : v;
@@ -2414,6 +2464,7 @@ function renderAll() {
   if (state.view === "customers") renderCustomers();
   if (state.view === "brokers") renderBrokers();
   if (state.view === "admin") renderAdmin();
+  if (state.view === "account") renderAccount();
   if (state.view === "scripts") renderScripts();
   if ($("#detail").open) renderDetail();
 }
@@ -2781,7 +2832,7 @@ function init() {
   });
   checkReminders();
   renderLimits();
-  if (sb) { wireAuth(); wireAdmin(); initAuth(); return; }
+  if (sb) { wireAuth(); wireAdmin(); wireAccount(); trackVisit(); initAuth(); return; }
   backfillCarriers();
   run(false, { auto: true });
 }
@@ -2797,13 +2848,129 @@ function waNumber(p) {
   if (d.length === 10 && d.startsWith("3")) d = "92" + d;
   return d;
 }
+let adminVisits = [];
 async function loadAdmin() {
   if (!sb || !state.isAdmin) return;
   $("#adminRows").innerHTML = `<tr><td colspan="8" class="empty">Loading users…</td></tr>`;
-  const { data, error } = await sb.rpc("admin_list_users");
+  const [{ data, error }, { data: visits }] = await Promise.all([sb.rpc("admin_list_users"), sb.rpc("admin_analytics", { days: 30 })]);
   if (error) { $("#adminRows").innerHTML = `<tr><td colspan="8" class="empty"><strong>Couldn't load users</strong>${esc(error.message)}</td></tr>`; return; }
   adminUsers = data || [];
+  adminVisits = visits || [];
   renderAdmin();
+}
+/* Visitors: daily totals by source and device, plus how many visitors turned into signups. */
+function renderVisitors() {
+  const today = karachiDay();
+  const dayAgo = n => { const d = new Date(today + "T00:00"); d.setDate(d.getDate() - n); return localIso(d); };
+  const sum = (from, key = "visitors") => adminVisits.filter(v => v.day >= from).reduce((s, v) => s + (v[key] || 0), 0);
+  const v1 = sum(today), v7 = sum(dayAgo(6)), v30 = sum(dayAgo(29)), views7 = sum(dayAgo(6), "views");
+  const signups7 = adminUsers.filter(u => Date.now() - new Date(u.created_at).getTime() < 7 * 864e5).length;
+  const mobile7 = adminVisits.filter(v => v.day >= dayAgo(6) && v.device === "mobile").reduce((s, v) => s + v.visitors, 0);
+  const bySrc = {};
+  adminVisits.filter(v => v.day >= dayAgo(29)).forEach(v => (bySrc[v.source] = (bySrc[v.source] || 0) + v.visitors));
+  const srcList = Object.entries(bySrc).sort((a, b) => b[1] - a[1]);
+  const max = Math.max(1, ...srcList.map(([, n]) => n));
+  $("#adminVisitors").innerHTML = `<h3>👀 Visitors</h3>
+    <div class="stats">
+      ${[[v1, "Visitors today"], [v7, "Visitors, 7 days"], [v30, "Visitors, 30 days"], [views7, "Page opens, 7 days"],
+         [v7 ? Math.round(signups7 / v7 * 100) + "%" : "–", `Signed up (${signups7} of last 7 days' visitors)`], [v7 ? Math.round(mobile7 / v7 * 100) + "%" : "–", "On a phone"]]
+        .map(([n, k]) => `<div class="stat"><div class="n">${n}</div><div class="k">${k}</div></div>`).join("")}
+    </div>
+    <div class="label">Where visitors came from (30 days)</div>
+    <div class="srcbars">${srcList.length ? srcList.map(([s, n]) => `<div><span>${esc({ whatsapp: "WhatsApp", chatgpt: "ChatGPT", linkedin: "LinkedIn", youtube: "YouTube" }[s] || s[0].toUpperCase() + s.slice(1))}</span><i style="width:${Math.round(n / max * 100)}%"></i><b>${n}</b></div>`).join("") : `<span class="sub">No visits counted yet. Counting started with this update.</span>`}</div>`;
+}
+/* Count a visit: one "visitor" per browser per day, every page open as a view. No personal data is sent. */
+function trackVisit() {
+  if (!sb) return;
+  let isNew = false;
+  try { const t = karachiDay(); isNew = localStorage.getItem("dw-visit") !== t; localStorage.setItem("dw-visit", t); } catch {}
+  let ref = "";
+  try {
+    const utm = new URLSearchParams(location.search).get("utm_source");
+    const host = document.referrer ? new URL(document.referrer).hostname : "";
+    ref = (utm || (host && host !== location.hostname ? host : "")).toLowerCase();
+  } catch {}
+  const src = !ref ? "direct" : /google/.test(ref) ? "google" : /bing/.test(ref) ? "bing" : /facebook|fb\.|instagram/.test(ref) ? "facebook"
+    : /whatsapp|wa\.me/.test(ref) ? "whatsapp" : /youtube|youtu\.be/.test(ref) ? "youtube" : /chatgpt|openai/.test(ref) ? "chatgpt" : /linkedin|lnkd/.test(ref) ? "linkedin" : "other";
+  const dev = /Mobi|Android|iPhone/i.test(navigator.userAgent) ? "mobile" : "desktop";
+  sb.rpc("track_visit", { src, dev, is_new: isNew }).then(() => {}, () => {});
+}
+/* Full backup of everything in the database, downloaded by the owner. */
+function renderBackupNote() {
+  let last = 0;
+  try { last = +localStorage.getItem("dw-last-backup") || 0; } catch {}
+  const days = last ? Math.floor((Date.now() - last) / 864e5) : null;
+  $("#backupNote").innerHTML = days === null ? "⚠ <b>No full backup downloaded yet.</b> Download one now." :
+    days >= 7 ? `⚠ <b>Last full backup was ${days} days ago.</b> Download a new one.` : `✅ Last full backup: ${days === 0 ? "today" : days + (days === 1 ? " day" : " days") + " ago"}.`;
+}
+async function downloadFullBackup(btn) {
+  btn.disabled = true;
+  const { data, error } = await sb.rpc("admin_export");
+  btn.disabled = false;
+  if (error) { toast("Couldn't make the backup: " + error.message); return; }
+  download(`dispatchwala-full-backup-${localIso(new Date())}.json`, JSON.stringify(data, null, 2), "application/json");
+  try { localStorage.setItem("dw-last-backup", String(Date.now())); } catch {}
+  renderBackupNote();
+  toast(`Backup downloaded: ${(data.profiles || []).length} users`);
+}
+
+/* ===================== My account ===================== */
+async function loadAccount() {
+  if (!sb || !session) return;
+  const { data: p } = await sb.from("profiles").select("full_name,phone,plan,pro_until").eq("id", session.user.id).maybeSingle();
+  $("#acEmail").value = session.user.email || "";
+  if (document.activeElement !== $("#acName")) $("#acName").value = p?.full_name || "";
+  if (document.activeElement !== $("#acPhone")) $("#acPhone").value = p?.phone || "";
+  state.isPro = isProUser(p || {}); state.proUntil = p?.pro_until || null;
+  $("#userPlan").hidden = !state.isPro;
+  applyPlanLimits();
+  renderAccount();
+}
+function renderAccount() {
+  const used = Math.min(LIMITS.leadsPerDay, usageNow().exported);
+  const until = state.proUntil ? new Date(state.proUntil).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+  $("#acctPlan").innerHTML = state.isPro
+    ? `<div><span class="pill">PRO</span> ${until ? `until <b>${esc(until)}</b>` : ""}</div><div class="sub">${LIMITS.leadsPerDay} leads and ${LIMITS.searchesPerDay} searches a day.</div>`
+    : `<div><b>Free plan</b></div><div class="sub">${LIMITS.leadsPerDay} free leads and ${LIMITS.searchesPerDay} searches a day, every day.</div>`;
+  $("#acctBar").style.width = Math.round(used / LIMITS.leadsPerDay * 100) + "%";
+  $("#acctUsage").textContent = `Today: ${used} of ${LIMITS.leadsPerDay} leads used · ${searchesLeft()} searches left · resets at midnight (Pakistan time)`;
+}
+function wireAccount() {
+  $("#acSave").addEventListener("click", async e => {
+    const name = $("#acName").value.trim(), phone = $("#acPhone").value.trim();
+    if (!name) { toast("Please enter your name."); return; }
+    e.currentTarget.disabled = true;
+    const [{ error }, { error: e2 }] = await Promise.all([
+      sb.rpc("update_my_profile", { new_name: name, new_phone: phone }),
+      sb.auth.updateUser({ data: { full_name: name, phone } })
+    ]);
+    e.currentTarget.disabled = false;
+    if (error || e2) { toast("Couldn't save: " + (error || e2).message); return; }
+    $("#userName").textContent = name;
+    toast("Details saved");
+  });
+  $("#acPassBtn").addEventListener("click", async e => {
+    const p1 = $("#acPass").value, p2 = $("#acPass2").value;
+    if (p1.length < 6) { toast("Password must be at least 6 characters."); return; }
+    if (p1 !== p2) { toast("The two passwords don't match."); return; }
+    e.currentTarget.disabled = true;
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    e.currentTarget.disabled = false;
+    if (error) { toast(friendlyAuthError(error)); return; }
+    $("#acPass").value = ""; $("#acPass2").value = "";
+    toast("Password changed");
+  });
+  $("#acDelBtn").addEventListener("click", async e => {
+    if ($("#acDel").value.trim() !== "DELETE") { toast('Type DELETE in the box to confirm.'); return; }
+    e.currentTarget.disabled = true;
+    const { error } = await sb.rpc("delete_my_account");
+    e.currentTarget.disabled = false;
+    if (error) { toast("Couldn't delete the account: " + error.message); return; }
+    clearTimeout(cloudTimer);
+    try { localStorage.removeItem(STORE_KEY); } catch {}
+    await sb.auth.signOut();
+    toast("Your account has been deleted.");
+  });
 }
 function renderAdmin() {
   const now = Date.now(), today = karachiDay();
@@ -2817,6 +2984,8 @@ function renderAdmin() {
     [adminUsers.filter(isProUser).length, "Pro users"]
   ];
   $("#adminTiles").innerHTML = tiles.map(([n, k]) => `<div class="card tile"><span class="n">${n}</span><span class="k">${k}</span></div>`).join("");
+  renderVisitors();
+  renderBackupNote();
   const q = state.aq.toLowerCase();
   const list = adminUsers.filter(u => !q || [u.full_name, u.email, u.phone].join(" ").toLowerCase().includes(q));
   const body = $("#adminRows");
@@ -2857,6 +3026,7 @@ function adminCsv() {
 function wireAdmin() {
   let at; $("#aq").addEventListener("input", e => { clearTimeout(at); at = setTimeout(() => { state.aq = e.target.value.trim(); renderAdmin(); }, 150); });
   $("#adminRefresh").addEventListener("click", loadAdmin);
+  $("#adminBackup").addEventListener("click", e => downloadFullBackup(e.currentTarget));
   $("#adminExport").addEventListener("click", () => {
     if (!adminUsers.length) { toast("No users to download yet."); return; }
     download(`dispatchwala-users-${localIso(new Date())}.csv`, "﻿" + adminCsv(), "text/csv;charset=utf-8");
@@ -2904,6 +3074,7 @@ async function onLoggedIn() {
   state.isPro = isProUser(prof || {});
   $("#navAdmin").hidden = !state.isAdmin;
   $("#userPlan").hidden = !state.isPro;
+  state.proUntil = prof?.pro_until || null;
   applyPlanLimits();
   if (error) toast("Couldn't load your saved leads. Check your internet and refresh.");
   else if (row && row.data && Object.keys(row.data.leads || {}).length + Object.keys(row.data.me || {}).length) {

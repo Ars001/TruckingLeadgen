@@ -1,0 +1,23 @@
+# DispatchWala
+
+> DispatchWala is a web app for truck dispatchers. It finds newly authorized, active US motor carriers (MC numbers) from public FMCSA data, shows owner names, phone numbers, insurance status and fleet size, and includes a simple calling CRM to track calls and follow-ups. Free plan: 60 new leads a day.
+
+## What it does
+
+- Find carriers: search new MC authorities by date, MC number range, state, city or ZIP. Filter by equipment (dry van, reefer, flatbed, box truck, hotshot, power only and more), cargo, CDL or non-CDL, truck count, and phone or email on file. Every result has active MC authority and an active USDOT number.
+- Calling mode: one carrier at a time with a big Call button, a call script, and one-tap outcomes (no answer, voicemail, interested, call later, not interested) that set the next follow-up.
+- CRM: saved leads, pipeline stages, follow-ups due today, customers (signed carriers) and brokers. Data syncs to the user's account across devices.
+- Map & trip: US time zones with "good time to call" status, and a trip calculator with truck route miles, empty (deadhead) miles, all-in rate per mile, weekly diesel prices by region, weather warnings along the route, and WhatsApp sharing.
+
+## Data sources
+
+- FMCSA open data on data.transportation.gov: Company Census, Motus authority history and carrier records, L&I carrier records, insurance and BOC-3 filings. Updated daily.
+- Diesel prices: U.S. EIA weekly on-highway diesel prices (via the USDA open data portal).
+- Weather warnings: U.S. National Weather Service.
+- Truck route miles: openrouteservice (HeiGIT), map data © OpenStreetMap contributors.
+
+DispatchWala is independent and not affiliated with FMCSA or the U.S. Department of Transportation.
+
+## Links
+
+- App: https://dispatchwala.com/

@@ -12,8 +12,10 @@ Live from FMCSA open data on [data.transportation.gov](https://data.transportati
 - Motus Authority History (`yu5v-wbh6`)
 - Motus Carrier (`inys-ebih`)
 - L&I Carrier (`6eyk-hxee`)
+- Insurance on file: Motus Insurance (`c5y8-a4uz`) and L&I Active/Pending Insurance (`qh9u-swkp`)
+- BOC-3 process agent: Motus BOC-3 (`6snj-ed7q`) and L&I BOC-3 (`2emp-mxtb`)
 
-Out-of-service orders and insurance details are not in these datasets.
+Out-of-service orders are not in these datasets.
 
 ## Run it
 

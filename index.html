@@ -565,6 +565,7 @@ pre.script { white-space: pre-wrap; font-family: var(--font-body); font-size: 13
 details.fold summary { cursor: pointer; font-weight: 600; }
 .links { display: flex; flex-wrap: wrap; gap: 12px; }
 .links a { color: var(--accent); font-weight: 500; }
+.syncbar { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 60; max-width: calc(100% - 32px); padding: 9px 14px; border-radius: 10px; border: 1px solid var(--warn); background: var(--warn-soft); color: var(--ink); font-size: 13px; font-weight: 600; box-shadow: var(--shadow); }
 .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 8px; font-size: 13px; z-index: 50; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 footer.src { font-size: 12px; color: var(--muted); padding-block: 0 32px; }
 footer.src p { margin: 0 0 4px; max-width: 95ch; }
@@ -846,7 +847,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
   <section class="view" id="view-scripts" hidden>
     <div>
       <h2 class="title">Scripts &amp; emails</h2>
-      <p class="lede">Your details fill in the call script and email templates. Edit any template; changes save automatically in this browser.</p>
+      <p class="lede">Your details fill in the call script and email templates. Edit any template; changes save automatically to your account.</p>
     </div>
     <div class="card panel">
       <h3>Your details</h3>
@@ -864,7 +865,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <div class="twocol" id="templateEditors"></div>
     <div class="card panel">
       <h3>Backup</h3>
-      <p class="note">Your saved leads, notes, follow-ups, customers and templates live in this browser. Download a backup now and then, and restore it on another computer or after clearing the browser.</p>
+      <p class="note">Your saved leads, notes, follow-ups, customers and templates are saved to your account, so they show on any device you log in on. You can also download a backup file now and then.</p>
       <div class="buttons">
         <button class="btn" type="button" id="backupBtn">Download backup</button>
         <label class="btn" for="restoreFile">Restore from backup</label>
@@ -1140,7 +1141,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     <p>Every carrier in search results has active operating authority and an active USDOT number. Pending, inactive and revocation-pending carriers are left out.</p>
     <p>Data: FMCSA Company Census, Motus authority history and carrier records, and L&amp;I carrier records on data.transportation.gov. Owner names come from the company officers on the MCS-150. FMCSA doesn't record trailer type, so equipment is estimated: box truck means straight trucks and no tractors, power only means tractors and no trailers, and step deck and double drop mean heavy cargo on a tractor-trailer fleet. Out-of-service orders and insurance aren't in this data.</p>
     <p>Local times use each state's main time zone; a few states span two zones.</p>
-    <p>Your saved leads, notes, follow-ups, brokers and templates are saved in this browser only. Use Download backup under Scripts &amp; settings to keep a copy.</p>
+    <p>Your saved leads, notes, follow-ups, brokers and templates are saved to your account. Use Download backup under Scripts &amp; settings to keep your own copy.</p>
   </footer>
 </main>
 
@@ -1166,6 +1167,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
     </div>
   </form>
 </dialog>
+<div class="syncbar" id="syncBanner" role="status" hidden>⚠ Couldn't load your saved leads. Changes are kept on this device and will sync once connected.</div>
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
@@ -1334,7 +1336,8 @@ Thanks,
 };
 
 const STORE_KEY = "carrier-scout-crm";
-let db = { carriers: {}, leads: {}, me: {}, templates: {}, brokers: {} };
+const emptyDb = () => ({ carriers: {}, leads: {}, me: {}, templates: {}, brokers: {}, deleted: { leads: {}, brokers: {} }, stamps: {} });
+let db = emptyDb();
 /* Saved data (including a restored backup file) is cleaned on load: numbers stay numbers and stages stay known values, so nothing in it can inject markup. */
 const fromSaved = raw => {
   const obj = v => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
@@ -1354,14 +1357,60 @@ const fromSaved = raw => {
     l.customer = obj(l.customer);
     if (l.followUp && isNaN(new Date(l.followUp))) l.followUp = null;
   }
-  return { carriers, leads, me: obj(raw.me), templates: obj(raw.templates), brokers: obj(raw.brokers) };
+  const times = v => Object.fromEntries(Object.entries(obj(v)).map(([k, t]) => [k, Number(t) || 0]).filter(([, t]) => t));
+  const del = obj(raw.deleted), st = obj(raw.stamps);
+  return { carriers, leads, me: obj(raw.me), templates: obj(raw.templates), brokers: obj(raw.brokers),
+    deleted: { leads: times(del.leads), brokers: times(del.brokers) }, stamps: { me: Number(st.me) || 0, templates: Number(st.templates) || 0 } };
 };
+/* Merging two copies of the saved data (this device and the account), so edits made on another device are never lost.
+   Leads and brokers: the most recently updated copy wins, and call/note history from both sides is kept.
+   Deleted leads and brokers leave a dated marker, so an older copy elsewhere can't bring them back.
+   Your details and templates: the side changed last wins. */
+const TOMB_DAYS = 180;
+function mergeDb(a, b) {
+  const when = r => Number(r?.updated) || Number(r?.added) || 0;
+  const tombs = (x, y) => {
+    const out = { ...x };
+    for (const [k, t] of Object.entries(y || {})) out[k] = Math.max(out[k] || 0, t);
+    for (const k of Object.keys(out)) if (Date.now() - out[k] > TOMB_DAYS * 864e5) delete out[k];
+    return out;
+  };
+  const deleted = { leads: tombs(a.deleted?.leads, b.deleted?.leads), brokers: tombs(a.deleted?.brokers, b.deleted?.brokers) };
+  const leads = {}, carriers = {}, brokers = {};
+  for (const k of new Set([...Object.keys(a.leads), ...Object.keys(b.leads)])) {
+    const x = a.leads[k], y = b.leads[k], fromB = !x || (y && when(y) > when(x));
+    const l = { ...(fromB ? y : x) };
+    if (x && y) {
+      const seen = new Map();
+      [...x.log, ...y.log].forEach(e => seen.set(`${e.t}|${e.kind}|${e.text}`, e));
+      l.log = [...seen.values()].sort((p, q) => q.t - p.t);
+    }
+    if ((deleted.leads[k] || 0) >= when(l)) continue;
+    leads[k] = l;
+    const c = fromB ? b.carriers[k] || a.carriers[k] : a.carriers[k] || b.carriers[k];
+    if (c) carriers[k] = c;
+  }
+  for (const k of new Set([...Object.keys(a.carriers), ...Object.keys(b.carriers)])) {
+    if (!carriers[k] && !deleted.leads[k]) carriers[k] = a.carriers[k] || b.carriers[k];
+  }
+  for (const k of new Set([...Object.keys(a.brokers), ...Object.keys(b.brokers)])) {
+    const x = a.brokers[k], y = b.brokers[k], r = !x || (y && when(y) > when(x)) ? y : x;
+    if ((deleted.brokers[k] || 0) < when(r)) brokers[k] = r;
+  }
+  const side = part => {
+    const sa = a.stamps?.[part] || 0, sb = b.stamps?.[part] || 0;
+    return sa > sb ? a[part] : sb > sa ? b[part] : Object.keys(b[part]).length ? b[part] : a[part];
+  };
+  return { carriers, leads, brokers, me: side("me"), templates: side("templates"), deleted,
+    stamps: { me: Math.max(a.stamps?.me || 0, b.stamps?.me || 0), templates: Math.max(a.stamps?.templates || 0, b.stamps?.templates || 0) } };
+}
 
 function loadDb() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
     if (raw && typeof raw === "object") db = fromSaved(raw);
   } catch {}
+  snapParts();
   // Carry over statuses and notes from the earlier version of the app.
   try {
     const old = JSON.parse(localStorage.getItem("carrier-scout-leads") || "null");
@@ -1377,7 +1426,14 @@ function loadDb() {
     }
   } catch {}
 }
+/* "Your details" and templates get a timestamp whenever they change, so the newer side wins when two devices merge. */
+let savedParts = { me: "{}", templates: "{}" };
+const snapParts = () => (savedParts = { me: JSON.stringify(db.me), templates: JSON.stringify(db.templates) });
 function saveDb() {
+  for (const part of ["me", "templates"]) {
+    const j = JSON.stringify(db[part]);
+    if (j !== savedParts[part]) { db.stamps = { ...db.stamps, [part]: Date.now() }; savedParts[part] = j; }
+  }
   try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
   catch { if (!session) toast("Couldn't save: this browser's storage is full or blocked. Download a backup."); }
   scheduleCloudSave();
@@ -1565,7 +1621,7 @@ function setFollowUp(dot, when) {
   if (when) l.log.unshift({ t: Date.now(), kind: "followup", text: `Follow-up set for ${fmtWhen(when)}` });
   saveDb();
 }
-function removeLead(dot) { delete db.leads[dot]; delete db.carriers[dot]; saveDb(); }
+function removeLead(dot) { delete db.leads[dot]; delete db.carriers[dot]; db.deleted.leads[dot] = Date.now(); saveDb(); }
 const tomorrowAt = (h) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, 0, 0, 0); return d; };
 
 const CALL_OUTCOMES = {
@@ -2773,7 +2829,7 @@ function init() {
     try {
       const data = JSON.parse(await file.text());
       if (!data || typeof data.leads !== "object") throw new Error();
-      db = fromSaved(data);
+      db = fromSaved(data); snapParts();
       saveDb(); renderAll(); toast(`Restored ${Object.keys(db.leads).length} carriers from backup`);
     } catch { toast("That file isn't a DispatchWala backup."); }
     e.target.value = "";
@@ -2887,7 +2943,7 @@ function init() {
   });
   $("#b_delete").addEventListener("click", e => {
     if (!e.target.dataset.armed) { e.target.dataset.armed = "1"; e.target.textContent = "Click again to delete"; return; }
-    delete db.brokers[bd.dataset.id]; saveDb(); bd.close(); toast("Broker deleted"); renderAll();
+    delete db.brokers[bd.dataset.id]; db.deleted.brokers[bd.dataset.id] = Date.now(); saveDb(); bd.close(); toast("Broker deleted"); renderAll();
   });
 
   window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
@@ -3302,11 +3358,13 @@ function renderTrip() {
   const tiles = [[mi(loaded), exact ? "Loaded miles" : "Loaded miles (about)", true]];
   if (t.empty) tiles.push([mi(emptyMi), "Empty miles to pickup"]);
   tiles.push([`${Math.round(hours)} hrs`, `Driving, about ${days} day${days > 1 ? "s" : ""}`], [money(fuelCost), `Fuel (${Math.round(gallons)} gal)`]);
+  const perMile = (n, d) => (d > 0 ? "$" + (n / d).toFixed(2) : "—"); // same pickup and delivery city = 0 miles
   if (pay) {
-    tiles.push(["$" + (pay / loaded).toFixed(2), "Rate per mile", !t.empty]);
-    if (t.empty) tiles.push(["$" + (pay / total).toFixed(2), "All-in rate (with empty miles)", true]);
+    tiles.push([perMile(pay, loaded), "Rate per mile", !t.empty]);
+    if (t.empty) tiles.push([perMile(pay, total), "All-in rate (with empty miles)", true]);
     tiles.push([money(pay - fuelCost), "Left after fuel"]);
-  } else tiles.push(["$" + (fuelCost / total).toFixed(2), "Fuel cost per mile"]);
+  } else tiles.push([perMile(fuelCost, total), "Fuel cost per mile"]);
+  if (!loaded) html += `<p class="note" style="color:var(--warn)">Pickup and delivery are the same city.</p>`;
   const stops = t.stops.filter(Boolean), a = stops[0], b = stops[stops.length - 1];
   const tzA = cityTz(a[1], a[2], a[3]), tzB = cityTz(b[1], b[2], b[3]);
   const diff = tzOffset(tzB) - tzOffset(tzA);
@@ -3323,7 +3381,7 @@ function renderTrip() {
   const lines = [`🚚 Load: ${stops.map(c => c[0] + ", " + c[1]).join(" → ")}`,
     `Loaded miles: ${exact ? "" : "about "}${mi(loaded)}`];
   if (t.empty) lines.push(`Empty miles to pickup: ${exact ? "" : "about "}${mi(emptyMi)} (truck in ${t.empty[0]}, ${t.empty[1]})`);
-  if (pay) lines.push(`Pay: ${money(pay)} = $${(pay / loaded).toFixed(2)}/mile${t.empty ? `, $${(pay / total).toFixed(2)}/mile all-in` : ""}`);
+  if (pay) lines.push(`Pay: ${money(pay)}` + (loaded ? ` = $${(pay / loaded).toFixed(2)}/mile${t.empty ? `, $${(pay / total).toFixed(2)}/mile all-in` : ""}` : ""));
   lines.push(`Driving: about ${Math.round(hours)} hrs (${days} day${days > 1 ? "s" : ""})`, `Fuel: about ${money(fuelCost)} (${Math.round(gallons)} gal at $${fuel.toFixed(2)})`);
   if (weather && weather.key === t.key && weather.alerts && weather.alerts.length) lines.push(`⚠ Weather: ${weather.alerts.map(x => x.event + (x.near ? " near " + x.near : "")).join("; ")}`);
   tripText = lines.join("\n");
@@ -3514,18 +3572,88 @@ function wireAdmin() {
 
 /* ===================== Accounts (Supabase) ===================== */
 /* Signed-in users get their saved leads, notes and settings synced to their account, so they work on any device. */
-let cloudTimer = null, cloudFailedOnce = false;
+/* Rules that keep data safe:
+   - Nothing is written to the account until the account's copy has loaded (cloudReady), so an empty device can't wipe it.
+   - Every write only succeeds if the account copy is still the one we last saw (updated_at = lastSyncedAt).
+     If another device saved in between, we load its copy, merge, and try again. */
+let cloudTimer = null, cloudFailedOnce = false, cloudReady = false, cloudDirty = false, lastSyncedAt = null;
+let cloudQueue = Promise.resolve(), loadRetry = null, loadTries = 0, lastPull = 0;
+const inCloudQueue = fn => (cloudQueue = cloudQueue.then(fn).catch(() => {}));
+const setSyncBanner = on => ($("#syncBanner").hidden = !on);
 function scheduleCloudSave() {
   if (!sb || !session) return;
+  cloudDirty = true;
+  if (!cloudReady) return;
   clearTimeout(cloudTimer);
   cloudTimer = setTimeout(cloudSaveNow, 1500);
 }
-async function cloudSaveNow() {
-  if (!sb || !session) return;
-  clearTimeout(cloudTimer);
-  const { error } = await sb.from("user_data").upsert({ user_id: session.user.id, data: db, updated_at: new Date().toISOString() });
-  if (error && !cloudFailedOnce) { cloudFailedOnce = true; toast("Couldn't sync to your account right now. It will retry on your next change."); }
-  if (!error) cloudFailedOnce = false;
+function cloudSaveNow() {
+  if (!sb || !session || !cloudReady) return Promise.resolve();
+  clearTimeout(cloudTimer); cloudTimer = null;
+  return inCloudQueue(async () => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const uid = session.user.id, now = new Date().toISOString();
+      const { data, error } = lastSyncedAt
+        ? await sb.from("user_data").update({ data: db, updated_at: now }).eq("user_id", uid).eq("updated_at", lastSyncedAt).select("updated_at")
+        : await sb.from("user_data").insert({ user_id: uid, data: db, updated_at: now }).select("updated_at");
+      if (!error && data && data.length) { lastSyncedAt = data[0].updated_at; cloudDirty = false; cloudFailedOnce = false; return; }
+      if (error && error.code !== "23505") {
+        if (!cloudFailedOnce) { cloudFailedOnce = true; toast("Couldn't sync to your account right now. It will retry on your next change."); }
+        return;
+      }
+      await pullAndMerge(); // another device saved first: take its changes, then save again
+    }
+  });
+}
+/* Load the account copy and merge it into this device's copy. Returns true if anything changed here. */
+async function pullAndMerge() {
+  const { data: row, error } = await sb.from("user_data").select("data,updated_at").eq("user_id", session.user.id).maybeSingle();
+  if (error) throw error;
+  if (!row) { lastSyncedAt = null; return false; }
+  const canon = v => JSON.stringify(v, (k, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort()) : x));
+  const before = canon(db);
+  db = mergeDb(db, fromSaved(row.data || {}));
+  lastSyncedAt = row.updated_at;
+  snapParts();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch {}
+  if (canon(fromSaved(row.data || {})) !== canon(db)) cloudDirty = true; // this device had changes the account doesn't
+  return canon(db) !== before;
+}
+/* First load after sign-in. On failure, keep working on this device and retry (2s, 5s, 15s, then every 30s). */
+async function loadCloud() {
+  clearTimeout(loadRetry);
+  try {
+    await inCloudQueue(async () => {
+      const meta = session.user.user_metadata || {};
+      const hadRow = await pullAndMerge().then(() => lastSyncedAt !== null);
+      if (!hadRow || !Object.keys(db.me).length) {
+        // First sign-in: keep anything already saved in this browser and fill in the user's details.
+        db.me = { ...db.me, name: db.me?.name || meta.full_name || "", phone: db.me?.phone || meta.phone || "", email: db.me?.email || session.user.email };
+        saveDb();
+      }
+      cloudReady = true; loadTries = 0;
+    });
+    if (!cloudReady) throw new Error("load failed");
+    setSyncBanner(false);
+    if (cloudDirty) cloudSaveNow();
+    return true;
+  } catch {
+    setSyncBanner(true);
+    const wait = [2, 5, 15][loadTries++] || 30;
+    loadRetry = setTimeout(async () => { if (session && !cloudReady && await loadCloud()) { renderAll(); backfillCarriers(); } }, wait * 1000);
+    return false;
+  }
+}
+/* Coming back to the tab: pick up changes made on other devices. */
+function pullCloud() {
+  if (!sb || !session || !cloudReady || Date.now() - lastPull < 5000) return;
+  lastPull = Date.now();
+  inCloudQueue(async () => {
+    const { data: row } = await sb.from("user_data").select("updated_at").eq("user_id", session.user.id).maybeSingle();
+    if (!row || row.updated_at === lastSyncedAt) return;
+    if (await pullAndMerge()) renderAll();
+    if (cloudDirty) scheduleCloudSave();
+  });
 }
 const karachiDay = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
 
@@ -3535,8 +3663,8 @@ async function onLoggedIn() {
   $("#userName").textContent = meta.full_name || session.user.email;
   $("#userChip").hidden = false;
   setStatus("Loading your saved leads…");
-  const [{ data: row, error }, { data: use }] = await Promise.all([
-    sb.from("user_data").select("data").eq("user_id", session.user.id).maybeSingle(),
+  const [, { data: use }] = await Promise.all([
+    loadCloud(),
     sb.from("usage").select("searches,exported").eq("user_id", session.user.id).eq("day", karachiDay()).maybeSingle()
   ]);
   setStatus("");
@@ -3551,15 +3679,6 @@ async function onLoggedIn() {
   $("#userPlan").hidden = !state.isPro;
   state.proUntil = prof?.pro_until || null;
   applyPlanLimits();
-  if (error) toast("Couldn't load your saved leads. Check your internet and refresh.");
-  else if (row && row.data && Object.keys(row.data.leads || {}).length + Object.keys(row.data.me || {}).length) {
-    db = fromSaved(row.data);
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch {}
-  } else {
-    // First sign-in: keep anything already saved in this browser and fill in the user's details.
-    db.me = { ...db.me, name: db.me?.name || meta.full_name || "", phone: db.me?.phone || meta.phone || "", email: db.me?.email || session.user.email };
-    await cloudSaveNow();
-  }
   renderLimits();
   showView(location.hash.slice(1) || "find");
   backfillCarriers();
@@ -3569,7 +3688,9 @@ function onLoggedOut() {
   document.body.classList.add("needauth");
   $("#userChip").hidden = true;
   // Clear this browser's copy so the next person on a shared computer can't see it. It stays safe in the account.
-  db = { carriers: {}, leads: {}, me: {}, templates: {}, brokers: {} };
+  cloudReady = false; cloudDirty = false; lastSyncedAt = null; loadTries = 0;
+  clearTimeout(cloudTimer); clearTimeout(loadRetry); setSyncBanner(false);
+  db = emptyDb(); snapParts();
   try { localStorage.removeItem(STORE_KEY); } catch {}
   state.results = []; cloudUsage = null;
   state.isAdmin = false; state.isPro = false; adminUsers = [];
@@ -3650,7 +3771,11 @@ function wireAuth() {
     onLoggedIn();
   });
   $("#logoutBtn").addEventListener("click", async () => { await cloudSaveNow(); await sb.auth.signOut(); toast("Logged out"); });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && cloudTimer) cloudSaveNow(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && cloudTimer) cloudSaveNow();
+    if (document.visibilityState === "visible") pullCloud();
+  });
+  window.addEventListener("focus", pullCloud);
 }
 
 function addNote(dot) {

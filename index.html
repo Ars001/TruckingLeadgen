@@ -1094,6 +1094,7 @@ footer.src p { margin: 0 0 4px; max-width: 95ch; }
           <label class="field"><span>Email</span><input id="liEmail" type="email" autocomplete="email" required></label>
           <label class="field"><span>Password</span><input id="liPass" type="password" autocomplete="current-password" required></label>
           <button class="btn primary go" type="submit">Log in</button>
+          <button class="btn" type="button" id="resendConfirm" hidden>📧 Send the confirmation email again</button>
           <p class="note"><button type="button" class="btn link" id="forgotLink">Forgot password?</button> · New here? <button type="button" class="btn link" data-authtab="signup">Create free account</button></p>
         </form>
 
@@ -3793,7 +3794,7 @@ function onLoggedOut() {
   showView("auth");
   if (linkError) {
     showAuthPanel("forgot");
-    authMessage("This email link has expired or was already used. Type your email below to get a new link, and open only the newest email (links work once, for 1 hour).");
+    authMessage("This email link has expired or was already used. To reset your password, type your email below to get a new link. If it was your sign-up email, go to Log in instead and tap \"Send the confirmation email again\". Links work once, for 1 hour.");
     linkError = null;
   }
 }
@@ -3846,7 +3847,18 @@ function wireAuth() {
     busy(f, true);
     const { error } = await sb.auth.signInWithPassword({ email: $("#liEmail").value.trim(), password: $("#liPass").value });
     busy(f, false);
+    $("#resendConfirm").hidden = !/email not confirmed/i.test(error?.message || "");
     if (error) authMessage(friendlyAuthError(error));
+  });
+  $("#resendConfirm").addEventListener("click", async e => {
+    const btn = e.currentTarget, email = $("#liEmail").value.trim();
+    if (!email) return authMessage("Type your email above first.");
+    btn.disabled = true;
+    const { error } = await sb.auth.resend({ type: "signup", email, options: { emailRedirectTo: siteUrl() } });
+    btn.disabled = false;
+    if (error) return authMessage(friendlyAuthError(error));
+    btn.hidden = true;
+    authMessage("Sent! Open the newest email from DispatchWala (check spam too) and tap the link.", true);
   });
   $("#forgotForm").addEventListener("submit", async e => {
     e.preventDefault(); const f = e.currentTarget;

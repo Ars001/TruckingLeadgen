@@ -2383,7 +2383,7 @@ function loadFilters() { try { return JSON.parse(localStorage.getItem("carrier-s
 
 /* ===================== navigation ===================== */
 const BASE_TITLE = document.title;
-const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy", "auth"];
+const VIEWS = ["find", "today", "pipeline", "customers", "brokers", "scripts", "guide", "terms", "privacy", "auth", "admin"];
 function showView(v) {
   if (!VIEWS.includes(v) || v === "auth") v = "find";
   if (sb && !session && !["terms", "privacy"].includes(v)) v = "auth";
